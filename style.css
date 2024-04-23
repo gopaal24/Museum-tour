@@ -1,0 +1,8 @@
+.render{
+    border: 2px black solid;
+    border-radius: 10px;
+    position: absolute;
+    bottom: 2px;
+    left: 2px;
+    margin: 10px;
+}

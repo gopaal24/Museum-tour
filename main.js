@@ -8,6 +8,9 @@ import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
 import { OutlinePass } from "three/addons/postprocessing/OutlinePass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { FXAAShader } from "three/addons/shaders/FXAAShader.js";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+// import {gsap} from 'gsap';
 
 const stats = new Stats();
 document.body.appendChild(stats.dom);
@@ -30,6 +33,7 @@ let isColliding_left = false;
 let isColliding_right = false;
 let loaded = false;
 let is_pointer_locked = false;
+let object_selected = false;
 let model;
 let interactable_objects = [];
 
@@ -69,9 +73,12 @@ pitchObj.add(camera);
 
 var yawObj = new THREE.Object3D();
 yawObj.position.y = player.height;
-yawObj.position.z = 15 
+yawObj.position.z = 15;
 yawObj.add(pitchObj);
 scene.add(yawObj);
+
+var player_obj = new THREE.Object3D();
+player_obj.add(yawObj);
 
 // Player movement dunction
 function player_movement() {
@@ -104,18 +111,32 @@ function player_movement() {
 }
 
 // Pointer lock over redner element
-const rendererEl = renderer.domElement;
-rendererEl.addEventListener("click", () => {
-  if (!is_pointer_locked && rendererEl.requestPointerLock) {
+
+function lock_pointer(){
+  console.log("before locking")
+  if (!is_pointer_locked && !object_selected) {
+    console.log("locking")
     rendererEl.requestPointerLock();
   }
-});
+} 
+
+addEventListener("keyup", (e)=>{
+  if(e.key == "Escape"){
+    document.exitPointerLock()
+    is_pointer_locked = false
+  }
+})
+
+function change_lock_state(){
+  if(is_pointer_locked) is_pointer_locked = false;
+  else is_pointer_locked = true
+  console.log("lock status changed:", is_pointer_locked)
+}
+const rendererEl = renderer.domElement;
+rendererEl.addEventListener("click", lock_pointer);
 
 // pointer unlock
-document.addEventListener("pointerlockchange", () => {
-  console.log("locking system");
-  is_pointer_locked = is_pointer_locked ? false : true; //switching the is_pointer_locked state
-});
+document.addEventListener("pointerlockchange", change_lock_state);
 
 // raycast
 const raycast_frwd = new THREE.Raycaster();
@@ -248,7 +269,7 @@ manager.onLoad = function () {
     element.material.color.set(0xff0000);
     element.material.transparent = false;
   });
-  interactable_objects = [box1, box2, box3];
+  interactable_objects = [box1, box2, box3, neptune, chess_set];
 };
 manager.onError = function (e) {
   console.log("error: ", e);
@@ -287,21 +308,23 @@ const box1 = new THREE.Mesh(
   new THREE.MeshStandardMaterial()
 );
 box1.position.y = 4;
-scene.add(box1);
+// scene.add(box1);
+
 const box2 = new THREE.Mesh(
   new THREE.BoxGeometry(1, 1, 1),
   new THREE.MeshStandardMaterial()
 );
 box2.position.y = 4;
 box2.position.x = -2;
-scene.add(box2);
+// scene.add(box2);
+
 const box3 = new THREE.Mesh(
   new THREE.BoxGeometry(1, 1, 1),
   new THREE.MeshStandardMaterial()
 );
 box3.position.y = 4;
 box3.position.x = 2;
-scene.add(box3);
+// scene.add(box3);
 
 const blur_material = new THREE.MeshPhysicalMaterial();
 blur_material.transmission = 0.5;
@@ -316,7 +339,7 @@ blur_plane.rotateX(Math.PI);
 
 // crosshair raycast
 const crosshair_raycast = new THREE.Raycaster();
-crosshair_raycast.far = 10;
+crosshair_raycast.far = 5;
 let prev_selected = null;
 let crosshair_intersects = [];
 
@@ -329,36 +352,118 @@ function crosshair_logic() {
   crosshair_intersects =
     crosshair_raycast.intersectObjects(interactable_objects);
 
-  if (crosshair_intersects.length > 0) {
-    // console.log("intersecting")
+  if (crosshair_intersects.length > 0 && !object_selected) {
     prev_selected = crosshair_intersects[0];
     crosshair_intersects[0].object.material.color.set(0xff00000);
     const selectedObject = prev_selected.object;
     addSelectedObject(selectedObject);
     outlinePass.selectedObjects = selectedObjects;
+    gsap.to(crosshair_intersects[0].object.scale, {
+      x: 1.2,
+      y: 1.2,
+      z: 1.2,
+      duration: 1,
+    });
   } else {
     if (prev_selected != null) {
       prev_selected.object.material.color.set(0xffffff);
       outlinePass.selectedObjects = [];
+      gsap.to(prev_selected.object.scale, {
+        x: 1,
+        y: 1,
+        z: 1,
+        duration: 1,
+      });
     }
+    
   }
+}
+
+let neptune;
+loader.load("assets/neptu_biblioteca_museu_victor_balaguer.glb", (gltf) => {
+  neptune = gltf.scene;
+  neptune.position.y = 3;
+  neptune.position.x = -2;
+  // neptune.scale.set(10, 10, 10)
+  console.log(neptune);
+  scene.add(neptune);
+});
+
+let chess_set;
+loader.load("assets/lewis_chess_set.glb", (gltf) => {
+  chess_set = gltf.scene;
+  chess_set.position.y = 3;
+  chess_set.position.x = 2;
+  scene.add(chess_set);
+});
+
+class new_scene{
+  constructor(obj){
+    this.camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 100)
+    this.scene = new THREE.Scene()
+    this.renderer = new THREE.WebGLRenderer({alpha: true, antialias: true})
+    this.obj = obj.clone()
+
+    this.initiate()
+    
+  }
+
+  initiate(){
+    this.camera.position.z = 4;
+    const renderEl_2 = this.renderer.domElement
+    this.renderer.setSize(window.innerWidth/3, window.innerHeight/3)
+    document.body.appendChild(renderEl_2)
+    renderEl_2.className = "render"
+    this.controls = new OrbitControls(this.camera, renderEl_2)
+    this.scene.add(this.obj)
+
+    const ambient = new THREE.AmbientLight(0xffffff, 2)
+    this.scene.add(ambient)
+  }
+
+  destroy() {
+    document.body.removeChild(this.renderer.domElement);
+    this.renderer.dispose();
+    this.camera = null;
+    this.scene = null;
+    this.renderer = null;
+    object_selected = false
+  }
+
+} 
+
+let scene_2 = null
+
+
+
+let హలో = 23
+console.log(హలో)
+
+function animation(){
+  scene_2.renderer.render(scene_2.scene, scene_2.camera)
+  if(scene_2 == null) cancelAnimationFrame()
+  else requestAnimationFrame(animation)
 }
 
 addEventListener("mouseup", () => {
   crosshair_intersects =
     crosshair_raycast.intersectObjects(interactable_objects);
-
-  if (crosshair_intersects.length > 0) {
-    console.log("intersecting");
-    let pos = camera.getWorldPosition(new THREE.Vector3());
-    // pos = new THREE.Vector3(0,5,0)
-    crosshair_intersects[0].object.position.x = pos.x;
-    crosshair_intersects[0].object.position.y = pos.y + 0.5;
-    crosshair_intersects[0].object.position.z = pos.z - 4;
-    blur_plane.position.z = crosshair_intersects[0].object.position.z - 1.5;
-    scene.add(blur_plane);
+  if (crosshair_intersects.length > 0 && !object_selected) {
+    const obj = crosshair_intersects[0].object
+    scene_2 = new new_scene(obj)
+    document.exitPointerLock();
+    object_selected = true
+    animation()
   }
 });
+
+addEventListener("keyup", (e)=>{
+  if(e.key == 'x' && scene_2 != null) {
+    scene_2.destroy()
+    scene_2 = null
+    lock_pointer()
+  }
+})
 
 let composer, effectFXAA, outlinePass;
 
