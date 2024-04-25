@@ -3,27 +3,37 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <style>
-      * {
-        margin: 0;
-        padding: 0;
-      }
-
-      #crosshair {
-        position: absolute;
-        top: 50vh;
-        left: 50vw;
-        font-weight: 600;
-        font-size: 2em;
-        vertical-align: middle;
-      }
-    </style>
     <link rel="stylesheet" href="style.css">
     <title>Museum Virtual Tour</title>
   </head>
   <body>
-    <div id="app"></div>
-    <div id="crosshair">+</div>
+    <div class="loading-container">
+      <div class="bouncybox">
+        <div class="bouncy"></div>
+          <div class="loading">Loading...</div>
+      </div>
+    </div>
+    <div id="crosshair"><img src="assets/crosshair_dot.png" alt="crosshair">
+    </div>
+    <div class="container">
+      <div class="card">
+          <div class="image-container"> 
+          </div>
+          <div class="info">
+              <div class="heading">NAME</div>
+              <div class="meta-info">
+                  <div><h4>Time:</h4>
+                      <p>1790</p> 
+                  </div>
+                  <div><h4>Category:</h4> 
+                      <p>Example</p>
+                  </div>
+              </div>
+              <div class="info-text">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed euismod, enim eu sagittis placerat, nisi ex viverra risus, ac luctus risus nunc sit amet leo.</div>
+          </div>
+          <div class="close-btn"></div>
+      </div>
+    </div>
     <script type="importmap">
       {
         "imports": {

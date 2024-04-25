@@ -1,6 +1,5 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { GUI } from "https://cdn.jsdelivr.net/npm/lil-gui@0.19/+esm";
 import Stats from "three/addons/libs/stats.module.js";
 import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
@@ -9,6 +8,7 @@ import { OutlinePass } from "three/addons/postprocessing/OutlinePass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { FXAAShader } from "three/addons/shaders/FXAAShader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import {RGBELoader} from "three/addons/loaders/RGBELoader.js"
 
 // import {gsap} from 'gsap';
 
@@ -18,14 +18,22 @@ document.body.appendChild(stats.dom);
 // Player parameters
 const player = {
   height: 4,
-  speed: 0.08,
+  speed: 0.1,
   sideTurnSpeed: 0.05,
   verticalTurnSpeed: 0.5,
-  gravity: 0.04,
+  gravity: 0.18,
 };
 
+
+// html elements
+const container = document.querySelector(".container");
+const space_3d = document.querySelector(".image-container");
+const close_btn = document.querySelector(".close-btn");
+const loading_screen = document.querySelector(".loading-container");
+const crosshair = document.querySelector("#crosshair");
+
 // essential variables
-let collider_mesh_array = [];
+let collider_mesh_array;
 let keyPressed = {};
 let isColliding_frwd = false;
 let isColliding_back = false;
@@ -103,34 +111,34 @@ function player_movement() {
       -Math.cos(-yawObj.rotation.y - Math.PI / 2) * player.speed;
   }
   if (keyPressed["q"]) {
-    yawObj.position.y += player.speed * 0.2;
+    yawObj.position.y += player.speed * 0.6;
   }
   if (keyPressed["e"]) {
-    yawObj.position.y -= player.speed * 0.2;
+    yawObj.position.y -= player.speed * 0.6;
   }
 }
 
 // Pointer lock over redner element
 
-function lock_pointer(){
-  console.log("before locking")
+function lock_pointer() {
+  console.log("before locking");
   if (!is_pointer_locked && !object_selected) {
-    console.log("locking")
+    console.log("locking");
     rendererEl.requestPointerLock();
   }
-} 
+}
 
-addEventListener("keyup", (e)=>{
-  if(e.key == "Escape"){
-    document.exitPointerLock()
-    is_pointer_locked = false
+addEventListener("keyup", (e) => {
+  if (e.key == "Escape") {
+    document.exitPointerLock();
+    is_pointer_locked = false;
   }
-})
+});
 
-function change_lock_state(){
-  if(is_pointer_locked) is_pointer_locked = false;
-  else is_pointer_locked = true
-  console.log("lock status changed:", is_pointer_locked)
+function change_lock_state() {
+  if (is_pointer_locked) is_pointer_locked = false;
+  else is_pointer_locked = true;
+  console.log("lock status changed:", is_pointer_locked);
 }
 const rendererEl = renderer.domElement;
 rendererEl.addEventListener("click", lock_pointer);
@@ -234,7 +242,8 @@ function update() {
     intersects_down.length > 0 &&
     intersects_down[0].distance > height_raycast_dist + 0.1
   ) {
-    yawObj.position.y -= intersects_down[0].distance * player.gravity;
+    yawObj.position.y -=
+      (intersects_down[0].distance - height_raycast_dist) * player.gravity;
   }
 }
 
@@ -253,6 +262,13 @@ addEventListener("mousemove", (e) => {
   }
 });
 
+new RGBELoader().load("assets/museum_of_ethnography_2k.hdr", function(hdri){
+  hdri.mapping = THREE.EquirectangularReflectionMapping;
+
+  scene.environment = hdri
+  scene.environmentIntensity = 0.6 
+})
+
 // Load manager
 const manager = new THREE.LoadingManager();
 manager.onStart = function () {
@@ -262,14 +278,24 @@ manager.onProgress = function () {
   console.log("loading");
 };
 manager.onLoad = function () {
-  collider_mesh_array = model.children[2].children; //pushing the collider object to an array
+  let collider_mesh = model.children[0].children[0]; //pushing the collider object to an array
+  collider_mesh_array = model.children[0].children[0].children; //pushing the collider object to an array
   loaded = true;
-  collider_mesh_array.forEach((element) => {
-    element.material.wireframe = true;
-    element.material.color.set(0xff0000);
-    element.material.transparent = false;
-  });
-  interactable_objects = [box1, box2, box3, neptune, chess_set];
+  const transparent_boxes = model.children[0].children[1].children[0].children[43]
+  console.log(model)
+  transparent_boxes.traverse((mesh)=>{
+    mesh.material.transparent = true;
+    mesh.material.opacity = 0;
+  })
+  collider_mesh.traverse((mesh)=>{
+    if(mesh.material != undefined){
+      mesh.material.transparent = true;
+      mesh.material.opacity = 0
+    }
+  })
+  interactable_objects = model.children[0].children[2].children;
+  loading_screen.style.display = "none";
+  crosshair.style.display = "block";
 };
 manager.onError = function (e) {
   console.log("error: ", e);
@@ -278,7 +304,6 @@ manager.onError = function (e) {
 // lighting
 const light = new THREE.AmbientLight();
 scene.add(light);
-renderer.shadowMapDebug = true;
 
 const point = new THREE.PointLight(0xff0000, 20);
 point.position.y = 5.5;
@@ -288,12 +313,12 @@ point.castShadow = true;
 const direction = new THREE.DirectionalLight();
 direction.intensity = 10;
 direction.castShadow = true;
-scene.add(direction);
+// scene.add(direction);
 renderer.shadowMap.antialias = true;
 
 //GLTF loader
 const loader = new GLTFLoader(manager);
-loader.load("assets/Museum_Collider.glb", (gltf) => {
+loader.load("assets/museum_final_01.glb", (gltf) => {
   model = gltf.scene;
   model.traverse((mesh) => {
     mesh.castShadow = true;
@@ -339,7 +364,7 @@ blur_plane.rotateX(Math.PI);
 
 // crosshair raycast
 const crosshair_raycast = new THREE.Raycaster();
-crosshair_raycast.far = 5;
+crosshair_raycast.far = 10;
 let prev_selected = null;
 let crosshair_intersects = [];
 
@@ -354,14 +379,14 @@ function crosshair_logic() {
 
   if (crosshair_intersects.length > 0 && !object_selected) {
     prev_selected = crosshair_intersects[0];
-    crosshair_intersects[0].object.material.color.set(0xff00000);
+    // crosshair_intersects[0].object.material.color.set(0xff00000);
     const selectedObject = prev_selected.object;
     addSelectedObject(selectedObject);
     outlinePass.selectedObjects = selectedObjects;
     gsap.to(crosshair_intersects[0].object.scale, {
-      x: 1.2,
-      y: 1.2,
-      z: 1.2,
+      x: 1.1,
+      y: 1.1,
+      z: 1.1,
       duration: 1,
     });
   } else {
@@ -375,97 +400,114 @@ function crosshair_logic() {
         duration: 1,
       });
     }
-    
   }
 }
 
-let neptune;
-loader.load("assets/neptu_biblioteca_museu_victor_balaguer.glb", (gltf) => {
-  neptune = gltf.scene;
-  neptune.position.y = 3;
-  neptune.position.x = -2;
-  // neptune.scale.set(10, 10, 10)
-  console.log(neptune);
-  scene.add(neptune);
-});
+let height = space_3d.offsetHeight;
+let width = space_3d.offsetWidth;
 
-let chess_set;
-loader.load("assets/lewis_chess_set.glb", (gltf) => {
-  chess_set = gltf.scene;
-  chess_set.position.y = 3;
-  chess_set.position.x = 2;
-  scene.add(chess_set);
-});
+console.log(width, height);
 
-class new_scene{
-  constructor(obj){
-    this.camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 100)
-    this.scene = new THREE.Scene()
-    this.renderer = new THREE.WebGLRenderer({alpha: true, antialias: true})
-    this.obj = obj.clone()
+class new_scene {
+  constructor(obj) {
+    this.scene = new THREE.Scene();
+    this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    this.obj = obj.clone();
 
-    this.initiate()
-    
+    this.height = space_3d.clientHeight;
+    this.width = space_3d.clientWidth;
+
+    this.size = 5
+    this.test = new THREE.Mesh(new THREE.BoxGeometry(this.size, this.size, this.size), new THREE.MeshBasicMaterial())
+    new RGBELoader().load("assets/museum_of_ethnography_2k.hdr", function(hdri){
+      hdri.mapping = THREE.EquirectangularReflectionMapping
+      this.scene.environment = hdri
+    })
+    // this.scene.add(this.test)
+
+    this.camera = new THREE.PerspectiveCamera(
+      45,
+      this.width / this.height,
+      0.1,
+      10000
+    );
+    this.initiate();
   }
 
-  initiate(){
-    this.camera.position.z = 4;
-    const renderEl_2 = this.renderer.domElement
-    this.renderer.setSize(window.innerWidth/3, window.innerHeight/3)
-    document.body.appendChild(renderEl_2)
-    renderEl_2.className = "render"
-    this.controls = new OrbitControls(this.camera, renderEl_2)
-    this.scene.add(this.obj)
+  initiate() {
+    const renderEl_2 = this.renderer.domElement;
+    this.renderer.setSize(this.width, this.height);
+    space_3d.appendChild(renderEl_2);
+    this.controls = new OrbitControls(this.camera, renderEl_2);
+    this.obj.position.set(0,0,0)
+    this.obj.rotation.set(-Math.PI/2, Math.PI, Math.PI/5)
+    this.scene.add(this.obj);
+    const size = new THREE.Box3().setFromObject(this.obj).getSize(new THREE.Vector3())
+    console.log(size)
+    this.camera.position.set(0,size.y-100, size.z+300)
+    this.camera.lookAt(this.obj.position)
+    this.controls.target=this.obj.position
 
-    const ambient = new THREE.AmbientLight(0xffffff, 2)
-    this.scene.add(ambient)
+    const ambient = new THREE.AmbientLight(0xffffff, 2);
+    this.scene.add(ambient);
+
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace
+    this.renderer.outputEncoding = THREE.sRGBEncoding
   }
 
   destroy() {
-    document.body.removeChild(this.renderer.domElement);
+    space_3d.removeChild(this.renderer.domElement);
     this.renderer.dispose();
     this.camera = null;
     this.scene = null;
     this.renderer = null;
-    object_selected = false
+    object_selected = false;
   }
-
-} 
-
-let scene_2 = null
+}
 
 
+let scene_2 = null;
 
-let హలో = 23
-console.log(హలో)
+close_btn.addEventListener("click", () => {
+  scene_2.destroy();
+  scene_2 = null;
+  container.style.display = "none";
+  lock_pointer();
+});
 
-function animation(){
-  scene_2.renderer.render(scene_2.scene, scene_2.camera)
-  if(scene_2 == null) cancelAnimationFrame()
-  else requestAnimationFrame(animation)
+function animation() {
+  scene_2.renderer.render(scene_2.scene, scene_2.camera);
+  if (scene_2 == null) cancelAnimationFrame();
+  else requestAnimationFrame(animation);
 }
 
 addEventListener("mouseup", () => {
   crosshair_intersects =
     crosshair_raycast.intersectObjects(interactable_objects);
   if (crosshair_intersects.length > 0 && !object_selected) {
-    const obj = crosshair_intersects[0].object
-    scene_2 = new new_scene(obj)
+    const obj = crosshair_intersects[0].object;
+    console.log(obj)
+    container.style.display = "flex";
+    scene_2 = new new_scene(obj);
     document.exitPointerLock();
-    object_selected = true
-    animation()
+    object_selected = true;
+    animation();
   }
 });
 
-addEventListener("keyup", (e)=>{
-  if(e.key == 'x' && scene_2 != null) {
-    scene_2.destroy()
-    scene_2 = null
-    lock_pointer()
+addEventListener("keyup", (e) => {
+  if (e.key == "x" && scene_2 != null) {
+    scene_2.destroy();
+    scene_2 = null;
+    container.style.display = "none";
+    lock_pointer();
   }
-})
+});
 
 let composer, effectFXAA, outlinePass;
+
+renderer.outputColorSpace = THREE.SRGBColorSpace
+renderer.outputEncoding = THREE.sRGBEncoding
 
 composer = new EffectComposer(renderer);
 
@@ -503,29 +545,6 @@ addEventListener("resize", () => {
   camera.updateProjectionMatrix();
 });
 
-// gui for collision threshold setting
-const gui = new GUI();
-let obj = { threshold: 1 };
-const collison_threshold_folder = gui.addFolder("Collision Threshold");
-collison_threshold_folder
-  .add(obj, "threshold")
-  .min(0)
-  .max(2)
-  .step(0.1)
-  .name("Surrounding Threshold")
-  .onChange((value) => {
-    surrounding_raycast_dist = value;
-  });
-collison_threshold_folder
-  .add(obj, "threshold")
-  .min(0)
-  .max(5)
-  .step(0.1)
-  .name("Height Threshold")
-  .onChange((value) => {
-    height_raycast_dist = value;
-  });
-
 // animate
 function animate() {
   // renderer.render(scene, camera);
@@ -534,15 +553,6 @@ function animate() {
   player_movement(); //player player_movement
   if (loaded) update(); //checks collision
   crosshair_logic();
-  box1.rotation.x += 0.01;
-  box1.rotation.y += 0.01;
-
-  box2.rotation.x += 0.01;
-  box2.rotation.y += 0.01;
-
-  box3.rotation.x += 0.01;
-  box3.rotation.y += 0.01;
-
   stats.update();
 }
 animate();
