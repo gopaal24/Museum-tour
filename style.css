@@ -190,3 +190,14 @@ button {
 .hide{
   display: none;
 }
+
+.ui{
+  padding: 5px;
+  width: 150px;
+  border: 3px solid #eb9a3c;
+  background-color: #faf9f5d3;
+  color: #dda15e;
+  box-shadow: 10px 10px 15px rgba(29, 31, 31, 0.563)  ;
+    opacity: 1;
+  transform: translateY(-10px);
+}

@@ -186,25 +186,32 @@ document.body.appendChild(labelRenderer.domElement);
 const hover_name = document.createElement("h2");
 const hover_card = document.createElement("div");
 hover_card.appendChild(hover_name);
-hover_card.classList.add("hover_card-container");
+hover_card.classList.add("ui");
+hover_card.classList.add("hide")
 const hover_card_container = new CSS2DObject(hover_card);
 scene.add(hover_card_container);
 
 const name_info = document.createElement("h2");
 const name_card = document.createElement("div");
 name_card.appendChild(name_info);
+name_card.classList.add("ui");
+name_card.classList.add("hide")
 const name_card_container = new CSS2DObject(name_card);
 scene.add(name_card_container);
 
 const time_info = document.createElement("h2");
 const time_card = document.createElement("div");
 time_card.appendChild(time_info);
+time_card.classList.add("ui");
+time_card.classList.add("hide")
 const time_card_container = new CSS2DObject(time_card);
 scene.add(time_card_container);
 
 const data_info = document.createElement("h2");
 const data_card = document.createElement("div");
 data_card.appendChild(data_info);
+data_card.classList.add("ui");
+data_card.classList.add("hide")
 const data_card_container = new CSS2DObject(data_card);
 scene.add(data_card_container);
 
@@ -607,9 +614,8 @@ let delta = clock.getDelta()
     }
   }
 
-  addEventListener("keyup", (e) => {
-    if (e.key.toLowerCase() == "x") {
-      object_clicked = false;
+  function close_ui(){
+    object_clicked = false;
 
       name_card.classList.remove("show");
       time_card.classList.remove("show");
@@ -618,6 +624,11 @@ let delta = clock.getDelta()
       name_card.classList.add("hide");
       time_card.classList.add("hide");
       data_card.classList.add("hide");
+  }
+
+  addEventListener("keyup", (e) => {
+    if (e.key.toLowerCase() == "x") {
+      close_ui()
     }
   });
 
@@ -703,14 +714,7 @@ let delta = clock.getDelta()
   }
 
   addEventListener("dblclick", () => {
-
-    name_card.classList.remove("show");
-    time_card.classList.remove("show");
-    data_card.classList.remove("show");
-
-    name_card.classList.add("hide");
-    time_card.classList.add("hide");
-    data_card.classList.add("hide");
+    close_ui()
 
     crosshair_intersects =
       crosshair_raycast.intersectObjects(interactable_objects);
