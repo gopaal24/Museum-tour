@@ -21,7 +21,7 @@ document.body.appendChild(stats.dom);
 // Player parameters
 const player = {
   height: 4,
-  speed: 0.2,
+  speed: 10,
   sideTurnSpeed: 0.05,
   verticalTurnSpeed: 0.5,
   gravity: 0.18,
@@ -396,6 +396,10 @@ function player_cam() {
     }
   }
 
+const clock = new THREE.Clock()
+let delta = clock.getDelta()
+
+
   // Player movement dunction
   function player_movement() {
     if (
@@ -404,8 +408,8 @@ function player_cam() {
       !isColliding_frwd &&
       !hotspot_view
     ) {
-      player_obj.position.x += Math.sin(-yawObj.rotation.y) * player.speed;
-      player_obj.position.z += -Math.cos(-yawObj.rotation.y) * player.speed;
+      player_obj.position.x += Math.sin(-yawObj.rotation.y) * player.speed*delta;
+      player_obj.position.z += -Math.cos(-yawObj.rotation.y) * player.speed*delta;
     }
     if (
       is_pointer_locked &&
@@ -413,8 +417,8 @@ function player_cam() {
       !isColliding_back &&
       !hotspot_view
     ) {
-      player_obj.position.x -= Math.sin(-yawObj.rotation.y) * player.speed;
-      player_obj.position.z -= -Math.cos(-yawObj.rotation.y) * player.speed;
+      player_obj.position.x -= Math.sin(-yawObj.rotation.y) * player.speed*delta;
+      player_obj.position.z -= -Math.cos(-yawObj.rotation.y) * player.speed*delta;
     }
     if (
       is_pointer_locked &&
@@ -423,9 +427,9 @@ function player_cam() {
       !hotspot_view
     ) {
       player_obj.position.x -=
-        Math.sin(-yawObj.rotation.y + Math.PI / 2) * player.speed;
+        Math.sin(-yawObj.rotation.y + Math.PI / 2) * player.speed*delta;
       player_obj.position.z -=
-        -Math.cos(-yawObj.rotation.y + Math.PI / 2) * player.speed;
+        -Math.cos(-yawObj.rotation.y + Math.PI / 2) * player.speed*delta;
     }
     if (
       is_pointer_locked &&
@@ -434,9 +438,9 @@ function player_cam() {
       !hotspot_view
     ) {
       player_obj.position.x -=
-        Math.sin(-yawObj.rotation.y - Math.PI / 2) * player.speed;
+        Math.sin(-yawObj.rotation.y - Math.PI / 2) * player.speed*delta;
       player_obj.position.z -=
-        -Math.cos(-yawObj.rotation.y - Math.PI / 2) * player.speed;
+        -Math.cos(-yawObj.rotation.y - Math.PI / 2) * player.speed*delta;
     }
     if (keyPressed["q"]) {
       player_obj.position.y += player.speed * 0.6;
@@ -750,6 +754,7 @@ function player_cam() {
     requestAnimationFrame(animation__);
     if (loaded) update(); //checks collision
     crosshair_logic();
+    delta = clock.getDelta()
     player_movement(); //player player_movement
     stats.update();
     if (!hotspot_view) {
