@@ -171,3 +171,22 @@ button {
     height: 40px;
   }
 }
+
+
+.hover_card-container{
+  background-color: red;
+  color: white;
+  width: 100px;
+}
+
+.hover_card-container > h2{
+  font-size: 3em;
+}
+
+.show{
+  display: block;
+}
+
+.hide{
+  display: none;
+}

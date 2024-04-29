@@ -3,35 +3,41 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css" />
     <title>Museum Virtual Tour</title>
   </head>
   <body>
     <div class="loading-container">
       <div class="bouncybox">
         <div class="bouncy"></div>
-          <div class="loading">Loading...</div>
+        <div class="loading">Loading...</div>
       </div>
     </div>
-    <div id="crosshair"><img src="assets/crosshair_dot.png" alt="crosshair">
+    <div id="crosshair">
+      <img src="assets/crosshair_dot.png" alt="crosshair" />
     </div>
     <div class="container">
       <div class="card">
-          <div class="image-container"> 
+        <div class="image-container"></div>
+        <div class="info">
+          <div class="heading">NAME</div>
+          <div class="meta-info">
+            <div>
+              <h4>Time:</h4>
+              <p>1790</p>
+            </div>
+            <div>
+              <h4>Category:</h4>
+              <p>Example</p>
+            </div>
           </div>
-          <div class="info">
-              <div class="heading">NAME</div>
-              <div class="meta-info">
-                  <div><h4>Time:</h4>
-                      <p>1790</p> 
-                  </div>
-                  <div><h4>Category:</h4> 
-                      <p>Example</p>
-                  </div>
-              </div>
-              <div class="info-text">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed euismod, enim eu sagittis placerat, nisi ex viverra risus, ac luctus risus nunc sit amet leo.</div>
+          <div class="info-text">
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed
+            euismod, enim eu sagittis placerat, nisi ex viverra risus, ac luctus
+            risus nunc sit amet leo.
           </div>
-          <div class="close-btn"></div>
+        </div>
+        <div class="close-btn"></div>
       </div>
     </div>
     <script type="importmap">
@@ -42,6 +48,12 @@
         }
       }
     </script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/tweenjs/1.0.2/tweenjs.min.js"
+      integrity="sha512-pmIhTiQq5a595Lh0A//Q1TMJyGBaNk9RHU+clXtRg/REWYcZ8VbQTTP7OGLmBKRVvtL/ZnwKL4SF7R+zpRsfEw=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
     <script
       src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"
       integrity="sha512-7eHRwcbYkK4d9g/6tD/mhkf++eoTHwpNM9woBxtPUBWm67zeAfFC+HrdoE2GanKeocly/VxeLvIqwvCdk7qScg=="
