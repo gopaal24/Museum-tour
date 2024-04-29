@@ -246,27 +246,27 @@ composer.addPass(effectFXAA);
 
 let selectedObjects = [];
 
- // pointer unlock
- document.addEventListener("pointerlockchange", function () {
+// pointer unlock
+document.addEventListener("pointerlockchange", function () {
   change_lock_state();
 });
 
 const rendererEl = renderer.domElement;
-  function lock_pointer() {
-    if (!is_pointer_locked) {
-      rendererEl.requestPointerLock();
-    }
+function lock_pointer() {
+  if (!is_pointer_locked) {
+    rendererEl.requestPointerLock();
   }
+}
 
-  function change_lock_state() {
-    is_pointer_locked = is_pointer_locked ? false : true;
-    console.log("change", is_pointer_locked)
+function change_lock_state() {
+  is_pointer_locked = is_pointer_locked ? false : true;
+  console.log("change", is_pointer_locked);
+}
+rendererEl.addEventListener("click", () => {
+  if (!hotspot_view) {
+    lock_pointer();
   }
-  rendererEl.addEventListener("click", () => {
-    if (!hotspot_view) {
-      lock_pointer();
-    }
-  });
+});
 
 // resize window listener
 addEventListener("resize", () => {
@@ -276,15 +276,15 @@ addEventListener("resize", () => {
   camera.updateProjectionMatrix();
 });
 
-const controls = new OrbitControls(hotspot_cam, renderer.domElement)
+const controls = new OrbitControls(hotspot_cam, renderer.domElement);
 
 function hotspot_cam_view() {
   controls.enabled = true;
-  
-  console.log("is_pointer_locked:", is_pointer_locked)
+
+  console.log("is_pointer_locked:", is_pointer_locked);
   document.exitPointerLock();
-  
-  console.log("is_pointer_locked:", is_pointer_locked)
+
+  console.log("is_pointer_locked:", is_pointer_locked);
 
   const hotspot_positions = [];
   const hotspot_obj = [];
@@ -297,22 +297,22 @@ function hotspot_cam_view() {
   let current_viewing_artifact = -1;
 
   console.log(hotspot_positions, hotspot_obj);
-  let obj = new THREE.Object3D()
+  let obj = new THREE.Object3D();
   let interpolatedQuaternion;
 
   function change_cam_view() {
     gsap.to(hotspot_cam.position, {
-      x:hotspot_positions[current_viewing_artifact].x + 2,
-      y:hotspot_positions[current_viewing_artifact].y + 1,
-      z:hotspot_positions[current_viewing_artifact].z - 2,
-      duration: 2
-    })   
+      x: hotspot_positions[current_viewing_artifact].x + 2,
+      y: hotspot_positions[current_viewing_artifact].y + 1,
+      z: hotspot_positions[current_viewing_artifact].z - 2,
+      duration: 2,
+    });
     gsap.to(controls.target, {
-      x:hotspot_positions[current_viewing_artifact].x,
-      y:hotspot_positions[current_viewing_artifact].y,
-      z:hotspot_positions[current_viewing_artifact].z,
-      duration: 2
-    })   
+      x: hotspot_positions[current_viewing_artifact].x,
+      y: hotspot_positions[current_viewing_artifact].y,
+      z: hotspot_positions[current_viewing_artifact].z,
+      duration: 2,
+    });
   }
 
   addEventListener("keyup", (e) => {
@@ -332,11 +332,10 @@ function hotspot_cam_view() {
 }
 
 function player_cam() {
-
   controls.enabled = false;
 
-  console.log("is_pointer_locked:", is_pointer_locked)
-  is_pointer_locked = false
+  console.log("is_pointer_locked:", is_pointer_locked);
+  is_pointer_locked = false;
 
   function handleObjectClick(event) {
     // Get the clicked object
@@ -604,8 +603,6 @@ function player_cam() {
     }
   }
 
-  
-
   addEventListener("keyup", (e) => {
     if (e.key.toLowerCase() == "x") {
       object_clicked = false;
@@ -702,6 +699,15 @@ function player_cam() {
   }
 
   addEventListener("dblclick", () => {
+
+    name_card.classList.remove("show");
+    time_card.classList.remove("show");
+    data_card.classList.remove("show");
+
+    name_card.classList.add("hide");
+    time_card.classList.add("hide");
+    data_card.classList.add("hide");
+
     crosshair_intersects =
       crosshair_raycast.intersectObjects(interactable_objects);
     if (crosshair_intersects.length > 0 && !object_selected) {
@@ -721,7 +727,7 @@ function player_cam() {
   });
 
   addEventListener("mouseup", function () {
-    handleObjectClick();
+    if(is_pointer_locked) handleObjectClick();
   });
 
   addEventListener("keyup", (e) => {
@@ -770,11 +776,11 @@ player_cam();
 
 // animate
 function animate() {
-  controls.update()
+  controls.update();
   composer.render();
   labelRenderer.render(scene, camera);
   requestAnimationFrame(animate);
   stats.update();
-  TWEEN.update()
+  TWEEN.update();
 }
 animate();
