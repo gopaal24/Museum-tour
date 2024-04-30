@@ -33,6 +33,8 @@ const space_3d = document.querySelector(".image-container");
 const close_btn = document.querySelector(".close-btn");
 const loading_screen = document.querySelector(".loading-container");
 const crosshair = document.querySelector("#crosshair");
+const start_btn = document.querySelector(".start-btn");
+const instructions_el = document.querySelector(".instructions");
 
 // essential variables
 let collider_mesh_array;
@@ -48,6 +50,7 @@ let model;
 let interactable_objects = [];
 let object_clicked = false;
 let hotspot_view = false;
+let artifact_pos = []
 
 // camera
 const camera = new THREE.PerspectiveCamera(
@@ -135,6 +138,7 @@ manager.onProgress = function () {
   console.log("loading");
 };
 manager.onLoad = function () {
+  instructions_el.style.display = "flex";
   let collider_mesh = model.children[0].children[0]; //pushing the collider object to an array
   collider_mesh_array = model.children[0].children[0].children; //pushing the collider object to an array
   loaded = true;
@@ -154,6 +158,15 @@ manager.onLoad = function () {
   interactable_objects = model.children[0].children[2].children;
   loading_screen.style.display = "none";
   crosshair.style.display = "block";
+
+  interactable_objects.forEach(element => {
+    artifact_pos.push(element.position)
+  });
+  start_btn.addEventListener("click", () => {
+    console.log("clicked");
+    instructions_el.style.display = "none";
+    rendererEl.requestPointerLock();
+  });
 };
 manager.onError = function (e) {
   console.log("error: ", e);
@@ -277,9 +290,12 @@ rendererEl.addEventListener("click", () => {
 // resize window listener
 addEventListener("resize", () => {
   camera.aspect = window.innerWidth / window.innerHeight;
+  hotspot_cam.aspect = window.innerWidth / window.innerHeight;
   renderer.setSize(window.innerWidth, window.innerHeight);
   labelRenderer.setSize(window.innerWidth, window.innerHeight);
   camera.updateProjectionMatrix();
+  hotspot_cam.updateProjectionMatrix();
+  renderer.setPixelRatio(window.devicePixelRatio);
 });
 
 const controls = new OrbitControls(hotspot_cam, renderer.domElement);
@@ -458,6 +474,21 @@ function hotspot_cam_view() {
       );
 
       console.log(size);
+
+      console.log(name_card_container);
+      const pos1 = name_card_container.element.getBoundingClientRect();
+      const pos2 = time_card_container.element.getBoundingClientRect();
+
+      // Compare positions
+      const dx = pos1.x - pos2.x;
+      const dy = pos1.y - pos2.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      // Compare sizes (assuming rect shapes)
+      const overlapX = Math.abs(dx) < (pos1.width + pos2.width) / 2;
+      const overlapY = Math.abs(dy) < (pos1.height + pos2.height) / 2;
+
+      console.log(overlapX, overlapY);
     }
   });
 
@@ -477,11 +508,11 @@ function hotspot_cam_view() {
     scene_2.destroy();
     scene_2 = null;
     container.style.display = "none";
-    lock_pointer();
   });
-  
+
   function animation() {
     scene_2.renderer.render(scene_2.scene, scene_2.camera);
+    
     if (scene_2 == null) cancelAnimationFrame();
     else requestAnimationFrame(animation);
   }
@@ -533,14 +564,15 @@ function hotspot_cam_view() {
   }
 
   addEventListener("keyup", (e) => {
-    close_ui();
-    if (e.key == "ArrowRight") {
+    if (e.key == "ArrowRight" && hotspot_view) {
+      close_ui();
       if (current_viewing_artifact >= hotspot_positions.length - 1)
         current_viewing_artifact = 0;
       else current_viewing_artifact += 1;
       change_cam_view();
     }
-    if (e.key == "ArrowLeft") {
+    if (e.key == "ArrowLeft" && hotspot_view) {
+      close_ui();
       if (current_viewing_artifact <= 0)
         current_viewing_artifact = hotspot_positions.length - 1;
       else current_viewing_artifact -= 1;
@@ -634,9 +666,9 @@ function player_cam() {
         delta
       );
       player_obj.position.x +=
-        Math.sin(-yawObj.rotation.y) * player.speed * delta;
+        Math.sin(-yawObj.rotation.y) * player.speed*delta ;
       player_obj.position.z +=
-        -Math.cos(-yawObj.rotation.y) * player.speed * delta;
+        -Math.cos(-yawObj.rotation.y) * player.speed*delta ;
     }
     if (
       is_pointer_locked &&
@@ -645,9 +677,9 @@ function player_cam() {
       !hotspot_view
     ) {
       player_obj.position.x -=
-        Math.sin(-yawObj.rotation.y) * player.speed * delta;
+        Math.sin(-yawObj.rotation.y) * player.speed*delta ;
       player_obj.position.z -=
-        -Math.cos(-yawObj.rotation.y) * player.speed * delta;
+        -Math.cos(-yawObj.rotation.y) * player.speed*delta ;
     }
     if (
       is_pointer_locked &&
@@ -656,9 +688,9 @@ function player_cam() {
       !hotspot_view
     ) {
       player_obj.position.x -=
-        Math.sin(-yawObj.rotation.y + Math.PI / 2) * player.speed * delta;
+        Math.sin(-yawObj.rotation.y + Math.PI / 2) * player.speed*delta ;
       player_obj.position.z -=
-        -Math.cos(-yawObj.rotation.y + Math.PI / 2) * player.speed * delta;
+        -Math.cos(-yawObj.rotation.y + Math.PI / 2) * player.speed*delta ;
     }
     if (
       is_pointer_locked &&
@@ -667,9 +699,9 @@ function player_cam() {
       !hotspot_view
     ) {
       player_obj.position.x -=
-        Math.sin(-yawObj.rotation.y - Math.PI / 2) * player.speed * delta;
+        Math.sin(-yawObj.rotation.y - Math.PI / 2) * player.speed*delta ;
       player_obj.position.z -=
-        -Math.cos(-yawObj.rotation.y - Math.PI / 2) * player.speed * delta;
+        -Math.cos(-yawObj.rotation.y - Math.PI / 2) * player.speed*delta ;
     }
     if (keyPressed["q"]) {
       player_obj.position.y += player.speed * 0.6;
@@ -805,6 +837,10 @@ function player_cam() {
         z: 1.1,
         duration: 1,
       });
+      gsap.to(crosshair_intersects[0].object.position, {
+        y: crosshair_intersects[0].object.position.y + 1,
+        duration: 1
+      })
 
       crosshair_intersects =
         crosshair_raycast.intersectObjects(interactable_objects);
@@ -1014,5 +1050,25 @@ function animate() {
   requestAnimationFrame(animate);
   stats.update();
   TWEEN.update();
+
+  if (object_clicked) {
+    console.log("selected")
+    const pos1 = name_card_container.element.getBoundingClientRect();
+    const pos2 = time_card_container.element.getBoundingClientRect();
+
+    // Compare positions
+    const dx = pos1.x - pos2.x;
+    const dy = pos1.y - pos2.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    // Compare sizes (assuming rect shapes)
+    const overlapX = Math.abs(dx) < (pos1.width + pos2.width) / 2;
+    const overlapY = Math.abs(dy) < (pos1.height + pos2.height) / 2;
+
+    console.log(overlapX, overlapY);
+    if(overlapX && overlapY){
+      time_card_container.position.y -= 0.1
+    }
+  }
 }
 animate();

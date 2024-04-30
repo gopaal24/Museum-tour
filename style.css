@@ -193,11 +193,91 @@ button {
 
 .ui{
   padding: 5px;
-  width: 150px;
-  border: 3px solid #eb9a3c;
-  background-color: #faf9f5d3;
-  color: #dda15e;
+  border: 1px solid beige;
+  background-color: rgba(0,0,0,0.5);
+  border-radius: 5px;
+  backdrop-filter: blur(5px);
+  color: beige;
   box-shadow: 10px 10px 15px rgba(29, 31, 31, 0.563)  ;
-    opacity: 1;
+  opacity: 1;
   transform: translateY(-10px);
+  font-family: Times, "Times New Roman", Georgia, serif;
+  font-style: italic;
+}
+
+.icon_1 {
+  width: 120px;
+  margin-right: 5px;
+  margin-left: 5px;
+}
+.icon{
+  width: 50px;
+  margin-right: 5px;
+  margin-left: 5px;
+}
+
+.instructions{
+  position: absolute;
+  height: 100vh;
+  width: 100vw;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.instructions > div{
+  background-color: rgba(0,0,0,0.5);
+  width: 80vw;
+  height: 70vh;
+  display: flex;
+  justify-content: center;
+  border: 1px solid grey;
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+}
+
+.instructions > div > div {
+  margin: auto
+}
+
+.instructions > div > div{
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 8px;
+  font-size: 1.8em;
+  color: #D2D1D1;
+  font-style: italic;
+}
+
+.instructions > div > div > div{
+  text-align: center;
+}
+
+.instructions > div > div > div:nth-child(1){
+  margin-bottom: 50px;
+  font-size: 2.2em;
+}
+
+.instructions button{
+  width: 280px;
+  height: 60px;
+  margin: auto;
+  margin-top:60px;
+  align-items: center;
+  border-radius: 0px;
+  cursor: pointer;
+  background-color: rgba(0,0,0,0);
+  border-radius: 10px;
+  border: 1px solid #D2D1D1;
+  color: #D2D1D1;
+  font-size: 1em;
+  font-style: italic;
+  font-family: Times, "Times New Roman", Georgia, serif;
+}
+
+.instructions button:hover{
+  border: none;
+  background-color: #D2D1D1;
+  color: black;
+  mix-blend-mode: lighten;  
 }
