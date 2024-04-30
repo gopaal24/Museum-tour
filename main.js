@@ -21,7 +21,7 @@ document.body.appendChild(stats.dom);
 // Player parameters
 const player = {
   height: 4,
-  speed: 10,
+  speed: 8,
   sideTurnSpeed: 0.05,
   verticalTurnSpeed: 0.5,
   gravity: 0.18,
@@ -63,7 +63,6 @@ const hotspot_cam = new THREE.PerspectiveCamera(
   0.1,
   1000
 );
-hotspot_cam.position.set(0, player.height, 5);
 
 // scene
 const scene = new THREE.Scene();
@@ -187,7 +186,7 @@ const hover_name = document.createElement("h2");
 const hover_card = document.createElement("div");
 hover_card.appendChild(hover_name);
 hover_card.classList.add("ui");
-hover_card.classList.add("hide")
+hover_card.classList.add("hide");
 const hover_card_container = new CSS2DObject(hover_card);
 scene.add(hover_card_container);
 
@@ -195,7 +194,7 @@ const name_info = document.createElement("h2");
 const name_card = document.createElement("div");
 name_card.appendChild(name_info);
 name_card.classList.add("ui");
-name_card.classList.add("hide")
+name_card.classList.add("hide");
 const name_card_container = new CSS2DObject(name_card);
 scene.add(name_card_container);
 
@@ -203,7 +202,7 @@ const time_info = document.createElement("h2");
 const time_card = document.createElement("div");
 time_card.appendChild(time_info);
 time_card.classList.add("ui");
-time_card.classList.add("hide")
+time_card.classList.add("hide");
 const time_card_container = new CSS2DObject(time_card);
 scene.add(time_card_container);
 
@@ -211,7 +210,7 @@ const data_info = document.createElement("h2");
 const data_card = document.createElement("div");
 data_card.appendChild(data_info);
 data_card.classList.add("ui");
-data_card.classList.add("hide")
+data_card.classList.add("hide");
 const data_card_container = new CSS2DObject(data_card);
 scene.add(data_card_container);
 
@@ -286,19 +285,230 @@ addEventListener("resize", () => {
 const controls = new OrbitControls(hotspot_cam, renderer.domElement);
 
 function hotspot_cam_view() {
-  controls.enabled = true;
+  hotspot_cam.position.set(-0.8, 7, 19);
+  // hotspot_cam.lookAt(25, player.height, 25);
 
+  controls.enabled = true;
   console.log("is_pointer_locked:", is_pointer_locked);
   document.exitPointerLock();
 
   console.log("is_pointer_locked:", is_pointer_locked);
 
-  const hotspot_positions = [];
   const hotspot_obj = [];
+  const cam_positions = [
+    { x: 2.2, y: 3.56, z: 7.9 },
+    { x: -6.5, y: 3.5, z: 8 },
+    { x: -3.8, y: 5, z: -18 },
+    { x: 2, y: 4.2, z: -11 },
+    { x: -6, y: 3.8, z: -17 },
+    { x: 4, y: 3.5, z: 6 },
+    { x: -6, y: 3.5, z: 6 },
+    { x: 4, y: 10, z: 12 },
+    { x: -12, y: 8, z: 2 },
+    { x: -12, y: 8, z: 22 },
+    { x: 0, y: 14, z: -9 },
+    { x: -8, y: 16, z: -23 },
+  ];
+  const hotspot_positions = [
+    { x: 3.2, y: 2.56, z: 10.87 },
+    { x: -4.04, y: 2.56, z: 10.87 },
+    { x: -0.465, y: 2.33, z: -9.752 },
+    { x: 6.175, y: 2.823, z: -22.03 },
+    { x: -6.513, y: 2.61, z: -25.75 },
+    { x: 12.211, y: 3.13, z: 3.73 },
+    { x: -12.566, y: 3.011, z: 3.378 },
+    { x: 12.649, y: 9.756, z: 9.868 },
+    { x: -13.195, y: 9.2, z: -2.43 },
+    { x: -14.513, y: 9.755, z: 22.71 },
+    { x: 0, y: 13.138, z: -14.75 },
+    { x: -7.915, y: 15.834, z: -27.829 },
+  ];
 
-  interactable_objects.forEach((element) => {
-    hotspot_positions.push(element.getWorldPosition(new THREE.Vector3()));
-    hotspot_obj.push(element);
+  const raycast = new THREE.Raycaster();
+  let mouse = {};
+
+  let scene_2 = null;
+
+  class new_scene {
+    constructor(obj) {
+      this.scene = new THREE.Scene();
+      this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+      this.obj = obj.clone();
+
+      this.height = space_3d.clientHeight;
+      this.width = space_3d.clientWidth;
+
+      this.size = 5;
+      const scene_ = this.scene;
+      this.test = new THREE.Mesh(
+        new THREE.BoxGeometry(this.size, this.size, this.size),
+        new THREE.MeshBasicMaterial()
+      );
+      new RGBELoader().load(
+        "assets/museum_of_ethnography_2k.hdr",
+        function (hdri) {
+          hdri.mapping = THREE.EquirectangularReflectionMapping;
+          scene_.environment = hdri;
+        }
+      );
+      // this.scene.add(this.test)
+
+      this.camera = new THREE.PerspectiveCamera(
+        45,
+        this.width / this.height,
+        0.1,
+        10000
+      );
+      this.initiate();
+    }
+
+    initiate() {
+      const renderEl_2 = this.renderer.domElement;
+      this.renderer.setSize(this.width, this.height);
+      space_3d.appendChild(renderEl_2);
+      this.controls = new OrbitControls(this.camera, renderEl_2);
+      this.obj.position.set(0, 0, 0);
+      this.obj.rotation.set(-Math.PI / 2, Math.PI, Math.PI / 5);
+      this.scene.add(this.obj);
+      const size = new THREE.Box3()
+        .setFromObject(this.obj)
+        .getSize(new THREE.Vector3());
+      console.log(size);
+      this.camera.position.set(0, size.y - 100, size.z + 300);
+      this.camera.lookAt(this.obj.position);
+      this.controls.target = this.obj.position;
+
+      const ambient = new THREE.AmbientLight(0xffffff, 2);
+      this.scene.add(ambient);
+
+      this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+      this.renderer.outputEncoding = THREE.sRGBEncoding;
+    }
+
+    destroy() {
+      space_3d.removeChild(this.renderer.domElement);
+      this.renderer.dispose();
+      this.camera = null;
+      this.scene = null;
+      this.renderer = null;
+      object_selected = false;
+    }
+  }
+
+  addEventListener("mouseup", (e) => {
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+    raycast.setFromCamera(mouse, hotspot_cam);
+
+    const intersects = raycast.intersectObjects(interactable_objects);
+    if (intersects.length > 0) {
+      console.log("clicked");
+      object_clicked = true;
+      const clickedObject = intersects[0].object;
+      const size = new THREE.Box3()
+        .setFromObject(clickedObject)
+        .getSize(new THREE.Vector3());
+      console.log(clickedObject.name, size);
+
+      name_info.textContent = "name";
+      time_info.textContent = "time";
+      data_info.textContent = "data";
+
+      const clickedObjectPosition = new THREE.Vector3();
+      clickedObject.getWorldPosition(clickedObjectPosition);
+      console.log(clickedObjectPosition);
+      const offsetDirection = new THREE.Vector3(-1, 0, 0);
+      offsetDirection.applyQuaternion(hotspot_cam.quaternion);
+      const offsetDistance = size.x / 1.5;
+      const offsetPosition = clickedObjectPosition
+        .clone()
+        .add(offsetDirection.clone().multiplyScalar(offsetDistance));
+
+      const offsetDirection_ = new THREE.Vector3(1, 0, 0);
+      offsetDirection_.applyQuaternion(hotspot_cam.quaternion);
+      const offsetPosition_ = clickedObjectPosition
+        .clone()
+        .add(offsetDirection_.clone().multiplyScalar(offsetDistance));
+
+      console.log(offsetPosition);
+
+      name_card.classList.remove("hide");
+      time_card.classList.remove("hide");
+      data_card.classList.remove("hide");
+
+      name_card.classList.add("show");
+      time_card.classList.add("show");
+      data_card.classList.add("show");
+
+      name_card_container.position.set(
+        offsetPosition.x,
+        offsetPosition.y + size.y / 2,
+        offsetPosition.z
+      );
+      time_card_container.position.set(
+        offsetPosition.x,
+        offsetPosition.y + size.y / 2.4,
+        offsetPosition.z
+      );
+      data_card_container.position.set(
+        offsetPosition_.x,
+        offsetPosition.y + size.y / 2,
+        offsetPosition_.z
+      );
+
+      console.log(size);
+    }
+  });
+
+  function close_ui() {
+    object_clicked = false;
+
+    name_card.classList.remove("show");
+    time_card.classList.remove("show");
+    data_card.classList.remove("show");
+
+    name_card.classList.add("hide");
+    time_card.classList.add("hide");
+    data_card.classList.add("hide");
+  }
+
+  close_btn.addEventListener("click", () => {
+    scene_2.destroy();
+    scene_2 = null;
+    container.style.display = "none";
+    lock_pointer();
+  });
+  
+  function animation() {
+    scene_2.renderer.render(scene_2.scene, scene_2.camera);
+    if (scene_2 == null) cancelAnimationFrame();
+    else requestAnimationFrame(animation);
+  }
+
+  addEventListener("dblclick", (e) => {
+    close_ui();
+
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+    raycast.setFromCamera(mouse, hotspot_cam);
+
+    const intersects = raycast.intersectObjects(interactable_objects);
+
+    if (intersects.length > 0 && !object_selected) {
+      const obj = intersects[0].object;
+      console.log(obj);
+      container.style.display = "flex";
+      scene_2 = new new_scene(obj);
+      object_selected = true;
+      animation();
+
+      console.log(player_obj.position);
+      let pos = obj.getWorldPosition(new THREE.Vector3());
+      console.log(pos);
+      console.log(player_obj.position);
+    }
   });
 
   let current_viewing_artifact = -1;
@@ -309,9 +519,9 @@ function hotspot_cam_view() {
 
   function change_cam_view() {
     gsap.to(hotspot_cam.position, {
-      x: hotspot_positions[current_viewing_artifact].x + 2,
-      y: hotspot_positions[current_viewing_artifact].y + 1,
-      z: hotspot_positions[current_viewing_artifact].z - 2,
+      x: cam_positions[current_viewing_artifact].x + 2,
+      y: cam_positions[current_viewing_artifact].y + 1,
+      z: cam_positions[current_viewing_artifact].z - 2,
       duration: 2,
     });
     gsap.to(controls.target, {
@@ -323,8 +533,9 @@ function hotspot_cam_view() {
   }
 
   addEventListener("keyup", (e) => {
+    close_ui();
     if (e.key == "ArrowRight") {
-      if (current_viewing_artifact >= hotspot_positions.length)
+      if (current_viewing_artifact >= hotspot_positions.length - 1)
         current_viewing_artifact = 0;
       else current_viewing_artifact += 1;
       change_cam_view();
@@ -357,6 +568,8 @@ function player_cam() {
       const size = new THREE.Box3()
         .setFromObject(clickedObject)
         .getSize(new THREE.Vector3());
+
+      console.log(clickedObject.name, size);
 
       name_info.textContent = "name";
       time_info.textContent = "time";
@@ -400,12 +613,12 @@ function player_cam() {
       name_card.classList.add("show");
       time_card.classList.add("show");
       data_card.classList.add("show");
+      console.log(name_card.position);
     }
   }
 
-const clock = new THREE.Clock()
-let delta = clock.getDelta()
-
+  const clock = new THREE.Clock();
+  let delta = clock.getDelta();
 
   // Player movement dunction
   function player_movement() {
@@ -415,8 +628,15 @@ let delta = clock.getDelta()
       !isColliding_frwd &&
       !hotspot_view
     ) {
-      player_obj.position.x += Math.sin(-yawObj.rotation.y) * player.speed*delta;
-      player_obj.position.z += -Math.cos(-yawObj.rotation.y) * player.speed*delta;
+      console.log(
+        -Math.cos(-yawObj.rotation.y) * player.speed * delta,
+        player.speed,
+        delta
+      );
+      player_obj.position.x +=
+        Math.sin(-yawObj.rotation.y) * player.speed * delta;
+      player_obj.position.z +=
+        -Math.cos(-yawObj.rotation.y) * player.speed * delta;
     }
     if (
       is_pointer_locked &&
@@ -424,8 +644,10 @@ let delta = clock.getDelta()
       !isColliding_back &&
       !hotspot_view
     ) {
-      player_obj.position.x -= Math.sin(-yawObj.rotation.y) * player.speed*delta;
-      player_obj.position.z -= -Math.cos(-yawObj.rotation.y) * player.speed*delta;
+      player_obj.position.x -=
+        Math.sin(-yawObj.rotation.y) * player.speed * delta;
+      player_obj.position.z -=
+        -Math.cos(-yawObj.rotation.y) * player.speed * delta;
     }
     if (
       is_pointer_locked &&
@@ -434,9 +656,9 @@ let delta = clock.getDelta()
       !hotspot_view
     ) {
       player_obj.position.x -=
-        Math.sin(-yawObj.rotation.y + Math.PI / 2) * player.speed*delta;
+        Math.sin(-yawObj.rotation.y + Math.PI / 2) * player.speed * delta;
       player_obj.position.z -=
-        -Math.cos(-yawObj.rotation.y + Math.PI / 2) * player.speed*delta;
+        -Math.cos(-yawObj.rotation.y + Math.PI / 2) * player.speed * delta;
     }
     if (
       is_pointer_locked &&
@@ -445,9 +667,9 @@ let delta = clock.getDelta()
       !hotspot_view
     ) {
       player_obj.position.x -=
-        Math.sin(-yawObj.rotation.y - Math.PI / 2) * player.speed*delta;
+        Math.sin(-yawObj.rotation.y - Math.PI / 2) * player.speed * delta;
       player_obj.position.z -=
-        -Math.cos(-yawObj.rotation.y - Math.PI / 2) * player.speed*delta;
+        -Math.cos(-yawObj.rotation.y - Math.PI / 2) * player.speed * delta;
     }
     if (keyPressed["q"]) {
       player_obj.position.y += player.speed * 0.6;
@@ -614,21 +836,21 @@ let delta = clock.getDelta()
     }
   }
 
-  function close_ui(){
+  function close_ui() {
     object_clicked = false;
 
-      name_card.classList.remove("show");
-      time_card.classList.remove("show");
-      data_card.classList.remove("show");
+    name_card.classList.remove("show");
+    time_card.classList.remove("show");
+    data_card.classList.remove("show");
 
-      name_card.classList.add("hide");
-      time_card.classList.add("hide");
-      data_card.classList.add("hide");
+    name_card.classList.add("hide");
+    time_card.classList.add("hide");
+    data_card.classList.add("hide");
   }
 
   addEventListener("keyup", (e) => {
     if (e.key.toLowerCase() == "x") {
-      close_ui()
+      close_ui();
     }
   });
 
@@ -714,7 +936,7 @@ let delta = clock.getDelta()
   }
 
   addEventListener("dblclick", () => {
-    close_ui()
+    close_ui();
 
     crosshair_intersects =
       crosshair_raycast.intersectObjects(interactable_objects);
@@ -735,7 +957,7 @@ let delta = clock.getDelta()
   });
 
   addEventListener("mouseup", function () {
-    if(is_pointer_locked) handleObjectClick();
+    if (is_pointer_locked) handleObjectClick();
   });
 
   addEventListener("keyup", (e) => {
@@ -758,7 +980,7 @@ let delta = clock.getDelta()
     requestAnimationFrame(animation__);
     if (loaded) update(); //checks collision
     crosshair_logic();
-    delta = clock.getDelta()
+    delta = clock.getDelta();
     player_movement(); //player player_movement
     stats.update();
     if (!hotspot_view) {
@@ -787,7 +1009,8 @@ player_cam();
 function animate() {
   controls.update();
   composer.render();
-  labelRenderer.render(scene, camera);
+  if (hotspot_view) labelRenderer.render(scene, hotspot_cam);
+  else labelRenderer.render(scene, camera);
   requestAnimationFrame(animate);
   stats.update();
   TWEEN.update();
