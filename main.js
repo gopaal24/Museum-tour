@@ -587,12 +587,16 @@ function player_cam() {
   console.log("is_pointer_locked:", is_pointer_locked);
   is_pointer_locked = false;
 
+  let ui_added = false;
+  let ui_object = null;
+
   function handleObjectClick(event) {
     // Get the clicked object
     crosshair_intersects =
-      crosshair_raycast.intersectObjects(interactable_objects);
-
+    crosshair_raycast.intersectObjects(interactable_objects);
+    
     if (crosshair_intersects.length > 0) {
+      ui_added = true
       console.log("clicked");
       object_clicked = true;
       const clickedObject = crosshair_intersects[0].object;
@@ -607,6 +611,7 @@ function player_cam() {
       time_info.textContent = "time";
       data_info.textContent = "data";
 
+      ui_object = clickedObject;
       const clickedObjectPosition = new THREE.Vector3();
       clickedObject.getWorldPosition(clickedObjectPosition);
       const offsetDirection = new THREE.Vector3(-1, 0, 0);
@@ -649,6 +654,44 @@ function player_cam() {
     }
   }
 
+  function change_ui_pos(){
+    console.log("working")
+    const size = new THREE.Box3()
+        .setFromObject(ui_object)
+        .getSize(new THREE.Vector3());
+    const clickedObjectPosition = new THREE.Vector3();
+      ui_object.getWorldPosition(clickedObjectPosition);
+      const offsetDirection = new THREE.Vector3(-1, 0, 0);
+      offsetDirection.applyQuaternion(yawObj.quaternion);
+      const offsetDistance = size.x / 1.5;
+      const offsetPosition = clickedObjectPosition
+        .clone()
+        .add(offsetDirection.clone().multiplyScalar(offsetDistance));
+
+      const offsetDirection_ = new THREE.Vector3(1, 0, 0);
+      offsetDirection_.applyQuaternion(yawObj.quaternion);
+      const offsetPosition_ = clickedObjectPosition
+        .clone()
+        .add(offsetDirection_.clone().multiplyScalar(offsetDistance));
+
+      name_card_container.position.set(
+        offsetPosition.x,
+        offsetPosition.y + size.y / 2,
+        offsetPosition.z
+      );
+      time_card_container.position.set(
+        offsetPosition.x,
+        offsetPosition.y + size.y / 2.4,
+        offsetPosition.z
+      );
+      data_card_container.position.set(
+        offsetPosition_.x,
+        offsetPosition.y + size.y / 2,
+        offsetPosition_.z
+      );
+
+  }
+
   const clock = new THREE.Clock();
   let delta = clock.getDelta();
 
@@ -660,15 +703,11 @@ function player_cam() {
       !isColliding_frwd &&
       !hotspot_view
     ) {
-      console.log(
-        -Math.cos(-yawObj.rotation.y) * player.speed * delta,
-        player.speed,
-        delta
-      );
       player_obj.position.x +=
-        Math.sin(-yawObj.rotation.y) * player.speed*delta ;
+      Math.sin(-yawObj.rotation.y) * player.speed*delta ;
       player_obj.position.z +=
-        -Math.cos(-yawObj.rotation.y) * player.speed*delta ;
+      -Math.cos(-yawObj.rotation.y) * player.speed*delta ;
+      if(ui_added) change_ui_pos();
     }
     if (
       is_pointer_locked &&
@@ -677,9 +716,10 @@ function player_cam() {
       !hotspot_view
     ) {
       player_obj.position.x -=
-        Math.sin(-yawObj.rotation.y) * player.speed*delta ;
+      Math.sin(-yawObj.rotation.y) * player.speed*delta ;
       player_obj.position.z -=
-        -Math.cos(-yawObj.rotation.y) * player.speed*delta ;
+      -Math.cos(-yawObj.rotation.y) * player.speed*delta ;
+      if(ui_added) change_ui_pos();
     }
     if (
       is_pointer_locked &&
@@ -688,9 +728,10 @@ function player_cam() {
       !hotspot_view
     ) {
       player_obj.position.x -=
-        Math.sin(-yawObj.rotation.y + Math.PI / 2) * player.speed*delta ;
+      Math.sin(-yawObj.rotation.y + Math.PI / 2) * player.speed*delta ;
       player_obj.position.z -=
-        -Math.cos(-yawObj.rotation.y + Math.PI / 2) * player.speed*delta ;
+      -Math.cos(-yawObj.rotation.y + Math.PI / 2) * player.speed*delta ;
+      if(ui_added) change_ui_pos()
     }
     if (
       is_pointer_locked &&
@@ -699,9 +740,10 @@ function player_cam() {
       !hotspot_view
     ) {
       player_obj.position.x -=
-        Math.sin(-yawObj.rotation.y - Math.PI / 2) * player.speed*delta ;
+      Math.sin(-yawObj.rotation.y - Math.PI / 2) * player.speed*delta ;
       player_obj.position.z -=
-        -Math.cos(-yawObj.rotation.y - Math.PI / 2) * player.speed*delta ;
+      -Math.cos(-yawObj.rotation.y - Math.PI / 2) * player.speed*delta ;
+      if(ui_added) change_ui_pos()
     }
     if (keyPressed["q"]) {
       player_obj.position.y += player.speed * 0.6;
@@ -837,10 +879,6 @@ function player_cam() {
         z: 1.1,
         duration: 1,
       });
-      gsap.to(crosshair_intersects[0].object.position, {
-        y: crosshair_intersects[0].object.position.y + 1,
-        duration: 1
-      })
 
       crosshair_intersects =
         crosshair_raycast.intersectObjects(interactable_objects);
@@ -874,6 +912,8 @@ function player_cam() {
 
   function close_ui() {
     object_clicked = false;
+    ui_added = false;
+    ui_object = false;
 
     name_card.classList.remove("show");
     time_card.classList.remove("show");
@@ -1052,7 +1092,6 @@ function animate() {
   TWEEN.update();
 
   if (object_clicked) {
-    console.log("selected")
     const pos1 = name_card_container.element.getBoundingClientRect();
     const pos2 = time_card_container.element.getBoundingClientRect();
 
@@ -1064,8 +1103,6 @@ function animate() {
     // Compare sizes (assuming rect shapes)
     const overlapX = Math.abs(dx) < (pos1.width + pos2.width) / 2;
     const overlapY = Math.abs(dy) < (pos1.height + pos2.height) / 2;
-
-    console.log(overlapX, overlapY);
     if(overlapX && overlapY){
       time_card_container.position.y -= 0.1
     }
