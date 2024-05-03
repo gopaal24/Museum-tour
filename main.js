@@ -35,6 +35,9 @@ const loading_screen = document.querySelector(".loading-container");
 const crosshair = document.querySelector("#crosshair");
 const start_btn = document.querySelector(".start-btn");
 const instructions_el = document.querySelector(".instructions");
+const container_1 = document.querySelector(".container1");
+const container_2 = document.querySelector(".container2");
+const container_3 = document.querySelector(".container3");
 
 // essential variables
 let collider_mesh_array;
@@ -50,7 +53,7 @@ let model;
 let interactable_objects = [];
 let object_clicked = false;
 let hotspot_view = false;
-let artifact_pos = []
+let artifact_pos = [];
 
 // camera
 const camera = new THREE.PerspectiveCamera(
@@ -80,12 +83,17 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.render(scene, camera);
 
 // keyboard event to store the status of key press
-addEventListener("keydown", (e) => {
+
+function register_keydown(e){
   keyPressed[e.key.toLowerCase()] = true;
-});
-addEventListener("keyup", (e) => {
+}
+
+function register_keyup(e){
   keyPressed[e.key.toLowerCase()] = false;
-});
+}
+
+addEventListener("keydown", register_keydown);
+addEventListener("keyup", register_keyup);
 
 // pitch and yaw object creation
 // pitch stores the camera as a child and yaw stores pitch as a child
@@ -102,6 +110,9 @@ player_obj.position.y = player.height;
 player_obj.position.z = 15;
 player_obj.add(yawObj);
 scene.add(player_obj);
+
+const clock = new THREE.Clock();
+let delta = clock.getDelta();
 
 // raycast
 const raycast_frwd = new THREE.Raycaster();
@@ -137,6 +148,19 @@ manager.onStart = function () {
 manager.onProgress = function () {
   console.log("loading");
 };
+
+let jsonData;
+
+function fetchdata() {
+  fetch("data.json")
+    .then((response) => response.json())
+    .then((data) => {
+      jsonData = data;
+    });
+}
+
+let data;
+
 manager.onLoad = function () {
   instructions_el.style.display = "flex";
   let collider_mesh = model.children[0].children[0]; //pushing the collider object to an array
@@ -149,6 +173,7 @@ manager.onLoad = function () {
     mesh.material.transparent = true;
     mesh.material.opacity = 0;
   });
+  fetchdata();
   collider_mesh.traverse((mesh) => {
     if (mesh.material != undefined) {
       mesh.material.transparent = true;
@@ -159,10 +184,11 @@ manager.onLoad = function () {
   loading_screen.style.display = "none";
   crosshair.style.display = "block";
 
-  interactable_objects.forEach(element => {
-    artifact_pos.push(element.position)
+  interactable_objects.forEach((element) => {
+    artifact_pos.push(element.position);
   });
-  start_btn.addEventListener("click", () => {
+
+ start_btn.addEventListener("click", () => {
     console.log("clicked");
     instructions_el.style.display = "none";
     rendererEl.requestPointerLock();
@@ -203,29 +229,40 @@ hover_card.classList.add("hide");
 const hover_card_container = new CSS2DObject(hover_card);
 scene.add(hover_card_container);
 
+const right_details_container = document.createElement("div");
+
 const name_info = document.createElement("h2");
 const name_card = document.createElement("div");
 name_card.appendChild(name_info);
 name_card.classList.add("ui");
-name_card.classList.add("hide");
-const name_card_container = new CSS2DObject(name_card);
-scene.add(name_card_container);
+right_details_container.appendChild(name_card);
 
 const time_info = document.createElement("h2");
 const time_card = document.createElement("div");
 time_card.appendChild(time_info);
 time_card.classList.add("ui");
-time_card.classList.add("hide");
-const time_card_container = new CSS2DObject(time_card);
-scene.add(time_card_container);
+right_details_container.appendChild(time_card);
 
 const data_info = document.createElement("h2");
 const data_card = document.createElement("div");
 data_card.appendChild(data_info);
 data_card.classList.add("ui");
-data_card.classList.add("hide");
-const data_card_container = new CSS2DObject(data_card);
-scene.add(data_card_container);
+right_details_container.appendChild(data_card);
+
+right_details_container.classList.add("hide");
+right_details_container.classList.add("right-details");
+
+const right_details_object = new CSS2DObject(right_details_container);
+scene.add(right_details_object);
+
+const left_details_container = document.createElement("div");
+const left_img = document.createElement("img");
+left_img.classList.add("image");
+left_details_container.appendChild(left_img);
+left_details_container.classList.add("ui");
+left_details_container.classList.add("hide");
+const left_details_object = new CSS2DObject(left_details_container);
+scene.add(left_details_object);
 
 // crosshair raycast
 const crosshair_raycast = new THREE.Raycaster();
@@ -305,6 +342,9 @@ function hotspot_cam_view() {
   // hotspot_cam.lookAt(25, player.height, 25);
 
   controls.enabled = true;
+  controls.enablePan = false;
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.05;
   console.log("is_pointer_locked:", is_pointer_locked);
   document.exitPointerLock();
 
@@ -383,6 +423,8 @@ function hotspot_cam_view() {
       this.renderer.setSize(this.width, this.height);
       space_3d.appendChild(renderEl_2);
       this.controls = new OrbitControls(this.camera, renderEl_2);
+      this.controls.enableDamping = true;
+      this.controls.dampingFactor = 0.05
       this.obj.position.set(0, 0, 0);
       this.obj.rotation.set(-Math.PI / 2, Math.PI, Math.PI / 5);
       this.scene.add(this.obj);
@@ -411,113 +453,242 @@ function hotspot_cam_view() {
     }
   }
 
-  addEventListener("mouseup", (e) => {
+  let ui_added = false;
+  let ui_object = null;
+
+  function change_ui_pos() {
+    const clickedObjectPosition = new THREE.Vector3();
+    ui_object.getWorldPosition(clickedObjectPosition);
+
+    const size = new THREE.Box3()
+      .setFromObject(ui_object)
+      .getSize(new THREE.Vector3());
+
+    let offsetDirection = new THREE.Vector3(0, 0, 0);
+    let offsetDirection_ = new THREE.Vector3(0, 0, 0);
+    let offsetDistance = 0;
+
+    const dir = new THREE.Vector3();
+    dir
+      .subVectors(
+        hotspot_cam.getWorldPosition(new THREE.Vector3()),
+        clickedObjectPosition
+      )
+      .normalize();
+
+    console.log("direction", dir);
+    console.log(-0.2 > -0.5);
+
+    if (dir.z < -0.02 && dir.x > -0.5 && dir.x < 0.5) {
+      console.log("z");
+      offsetDirection = new THREE.Vector3(-1, 0, 0);
+      offsetDirection_ = new THREE.Vector3(1, 0, 0);
+      offsetDistance = size.x / 2;
+    }
+    else if (dir.x > 0.02 && dir.z > -0.5 && dir.z < 0.5) {
+      console.log("x");
+      offsetDistance = size.z / 2;
+      offsetDirection = new THREE.Vector3(0, 0, -1);
+      offsetDirection_ = new THREE.Vector3(0, 0, 1);
+    }
+    if (dir.z > 0.02 && dir.x > -0.5 && dir.x < 0.5) {
+      console.log("z");
+      offsetDirection = new THREE.Vector3(1, 0, 0);
+      offsetDirection_ = new THREE.Vector3(-1, 0, 0);
+      offsetDistance = size.x / 2;
+    }
+    if (dir.x < -0.02 && dir.z > -0.5 && dir.z < 0.5) {
+      console.log("x");
+      offsetDistance = size.z / 2;
+      offsetDirection = new THREE.Vector3(0, 0, 1);
+      offsetDirection_ = new THREE.Vector3(0, 0, -1);
+    }
+
+    // offsetDirection.applyQuaternion(yawObj.quaternion);
+
+    const offsetPosition = clickedObjectPosition
+      .clone()
+      .add(offsetDirection.clone().multiplyScalar(offsetDistance));
+
+    // offsetDirection_.applyQuaternion(yawObj.quaternion);
+    const offsetPosition_ = clickedObjectPosition
+      .clone()
+      .add(offsetDirection_.clone().multiplyScalar(offsetDistance));
+
+    right_details_container.classList.remove("hide");
+    right_details_container.classList.add("show");
+
+    left_details_container.classList.remove("hide");
+    left_details_container.classList.add("show");
+
+    if (Math.abs(dir.x) < Math.abs(dir.z)) {
+      offsetPosition_.z = offsetPosition.z;
+    } else {
+      offsetPosition_.x = offsetPosition.x;
+    }
+
+    console.log(offsetPosition);
+    console.log(offsetPosition_);
+    console.log(size);
+
+    right_details_container.center = new THREE.Vector2(0, 0);
+    right_details_object.center = new THREE.Vector2(0, 0);
+    left_details_object.center = new THREE.Vector2(1, 0);
+    left_details_container.center = new THREE.Vector2(1, 0);
+
+    right_details_object.position.set(
+      offsetPosition.x,
+      offsetPosition.y + size.y / 2,
+      offsetPosition.z
+    );
+    left_details_object.position.set(
+      offsetPosition_.x,
+      offsetPosition.y + size.y / 2,
+      offsetPosition_.z
+    );
+  }
+
+  function handleObjectClick(e){
     mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
 
     raycast.setFromCamera(mouse, hotspot_cam);
+    if(ui_added) change_ui_pos()
 
     const intersects = raycast.intersectObjects(interactable_objects);
     if (intersects.length > 0) {
+      ui_added = true;
       console.log("clicked");
       object_clicked = true;
       const clickedObject = intersects[0].object;
+      const pos = clickedObject.getWorldPosition(new THREE.Vector3());
       const size = new THREE.Box3()
         .setFromObject(clickedObject)
         .getSize(new THREE.Vector3());
-      console.log(clickedObject.name, size);
 
-      name_info.textContent = "name";
-      time_info.textContent = "time";
-      data_info.textContent = "data";
+      data = jsonData[clickedObject.name];
 
+      name_info.textContent = data.name;
+      time_info.textContent = data.period;
+      data_info.textContent = data.info;
+      left_img.src = data.img;
+
+      ui_object = clickedObject;
       const clickedObjectPosition = new THREE.Vector3();
       clickedObject.getWorldPosition(clickedObjectPosition);
-      console.log(clickedObjectPosition);
-      const offsetDirection = new THREE.Vector3(-1, 0, 0);
-      offsetDirection.applyQuaternion(hotspot_cam.quaternion);
-      const offsetDistance = size.x / 1.5;
+
+      let offsetDirection = new THREE.Vector3(0, 0, 0);
+      let offsetDirection_ = new THREE.Vector3(0, 0, 0);
+      let offsetDistance = 0;
+
+      const dir = new THREE.Vector3();
+      dir
+        .subVectors(
+          hotspot_cam.getWorldPosition(new THREE.Vector3()),
+          clickedObjectPosition
+        )
+        .normalize();
+
+      console.log("direction", dir);
+      console.log(-0.2 > -0.5);
+
+      if (dir.z < -0.02 && dir.x > -0.7 && dir.x < 0.7) {
+        console.log("z");
+        offsetDirection = new THREE.Vector3(-1, 0, 0);
+        offsetDirection_ = new THREE.Vector3(1, 0, 0);
+        offsetDistance = size.x / 2;
+      }
+      if (dir.x > 0.02 && dir.z > -0.7 && dir.z < 0.7) {
+        console.log("x");
+        offsetDistance = size.z / 2;
+        offsetDirection = new THREE.Vector3(0, 0, -1);
+        offsetDirection_ = new THREE.Vector3(0, 0, 1);
+      }
+      if (dir.z > 0.02 && dir.x > -0.7 && dir.x < 0.7) {
+        console.log("z");
+        offsetDirection = new THREE.Vector3(1, 0, 0);
+        offsetDirection_ = new THREE.Vector3(-1, 0, 0);
+        offsetDistance = size.x / 2;
+      }
+      if (dir.x < -0.02 && dir.z > -0.7 && dir.z < 0.7) {
+        console.log("x");
+        offsetDistance = size.z / 2;
+        offsetDirection = new THREE.Vector3(0, 0, 1);
+        offsetDirection_ = new THREE.Vector3(0, 0, -1);
+      }
+
+      // offsetDirection.applyQuaternion(yawObj.quaternion);
+
       const offsetPosition = clickedObjectPosition
         .clone()
         .add(offsetDirection.clone().multiplyScalar(offsetDistance));
 
-      const offsetDirection_ = new THREE.Vector3(1, 0, 0);
-      offsetDirection_.applyQuaternion(hotspot_cam.quaternion);
+      // offsetDirection_.applyQuaternion(yawObj.quaternion);
       const offsetPosition_ = clickedObjectPosition
         .clone()
         .add(offsetDirection_.clone().multiplyScalar(offsetDistance));
 
-      console.log(offsetPosition);
+      right_details_container.classList.remove("hide");
+      right_details_container.classList.add("show");
 
-      name_card.classList.remove("hide");
-      time_card.classList.remove("hide");
-      data_card.classList.remove("hide");
+      left_details_container.classList.remove("hide");
+      left_details_container.classList.add("show");
 
-      name_card.classList.add("show");
-      time_card.classList.add("show");
-      data_card.classList.add("show");
+      if (Math.abs(dir.x) < Math.abs(dir.z)) {
+        offsetPosition_.z = offsetPosition.z;
+      } else {
+        offsetPosition_.x = offsetPosition.x;
+      } 
 
-      name_card_container.position.set(
+      right_details_container.center = new THREE.Vector2(0, 0);
+      right_details_object.center = new THREE.Vector2(0, 0);
+      left_details_object.center = new THREE.Vector2(1, 0);
+      left_details_container.center = new THREE.Vector2(1, 0);
+
+      right_details_object.position.set(
         offsetPosition.x,
         offsetPosition.y + size.y / 2,
         offsetPosition.z
       );
-      time_card_container.position.set(
-        offsetPosition.x,
-        offsetPosition.y + size.y / 2.4,
-        offsetPosition.z
-      );
-      data_card_container.position.set(
+      left_details_object.position.set(
         offsetPosition_.x,
         offsetPosition.y + size.y / 2,
         offsetPosition_.z
       );
-
-      console.log(size);
-
-      console.log(name_card_container);
-      const pos1 = name_card_container.element.getBoundingClientRect();
-      const pos2 = time_card_container.element.getBoundingClientRect();
-
-      // Compare positions
-      const dx = pos1.x - pos2.x;
-      const dy = pos1.y - pos2.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-
-      // Compare sizes (assuming rect shapes)
-      const overlapX = Math.abs(dx) < (pos1.width + pos2.width) / 2;
-      const overlapY = Math.abs(dy) < (pos1.height + pos2.height) / 2;
-
-      console.log(overlapX, overlapY);
     }
-  });
+  }
+
+  addEventListener("mouseup", handleObjectClick);
 
   function close_ui() {
     object_clicked = false;
+    ui_added = false
+    ui_object = null
 
-    name_card.classList.remove("show");
-    time_card.classList.remove("show");
-    data_card.classList.remove("show");
+    right_details_container.classList.remove("show");
+    right_details_container.classList.add("hide");
 
-    name_card.classList.add("hide");
-    time_card.classList.add("hide");
-    data_card.classList.add("hide");
+    left_details_container.classList.remove("show");
+    left_details_container.classList.add("hide");
   }
 
-  close_btn.addEventListener("click", () => {
+  function destroy_scene(){
     scene_2.destroy();
     scene_2 = null;
     container.style.display = "none";
-  });
+  }
+
+  close_btn.addEventListener("click", destroy_scene);
 
   function animation() {
     scene_2.renderer.render(scene_2.scene, scene_2.camera);
-    
+    scene_2.controls.update()
     if (scene_2 == null) cancelAnimationFrame();
     else requestAnimationFrame(animation);
   }
 
-  addEventListener("dblclick", (e) => {
+
+  function open_detailed_popup(e){
     close_ui();
 
     mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
@@ -540,7 +711,9 @@ function hotspot_cam_view() {
       console.log(pos);
       console.log(player_obj.position);
     }
-  });
+  }
+
+  addEventListener("dblclick", open_detailed_popup);
 
   let current_viewing_artifact = -1;
 
@@ -563,7 +736,7 @@ function hotspot_cam_view() {
     });
   }
 
-  addEventListener("keyup", (e) => {
+  function camera_navigation(e){
     if (e.key == "ArrowRight" && hotspot_view) {
       close_ui();
       if (current_viewing_artifact >= hotspot_positions.length - 1)
@@ -578,7 +751,9 @@ function hotspot_cam_view() {
       else current_viewing_artifact -= 1;
       change_cam_view();
     }
-  });
+  }
+
+  addEventListener("keyup", camera_navigation);
 }
 
 function player_cam() {
@@ -593,10 +768,10 @@ function player_cam() {
   function handleObjectClick(event) {
     // Get the clicked object
     crosshair_intersects =
-    crosshair_raycast.intersectObjects(interactable_objects);
-    
+      crosshair_raycast.intersectObjects(interactable_objects);
+
     if (crosshair_intersects.length > 0) {
-      ui_added = true
+      ui_added = true;
       console.log("clicked");
       object_clicked = true;
       const clickedObject = crosshair_intersects[0].object;
@@ -605,95 +780,193 @@ function player_cam() {
         .setFromObject(clickedObject)
         .getSize(new THREE.Vector3());
 
-      console.log(clickedObject.name, size);
+      data = jsonData[clickedObject.name];
 
-      name_info.textContent = "name";
-      time_info.textContent = "time";
-      data_info.textContent = "data";
+      name_info.textContent = data.name;
+      time_info.textContent = data.period;
+      data_info.textContent = data.info;
+      left_img.src = data.img;
 
       ui_object = clickedObject;
       const clickedObjectPosition = new THREE.Vector3();
       clickedObject.getWorldPosition(clickedObjectPosition);
-      const offsetDirection = new THREE.Vector3(-1, 0, 0);
-      offsetDirection.applyQuaternion(yawObj.quaternion);
-      const offsetDistance = size.x / 1.5;
+
+      let offsetDirection = new THREE.Vector3(0, 0, 0);
+      let offsetDirection_ = new THREE.Vector3(0, 0, 0);
+      let offsetDistance = 0;
+
+      const dir = new THREE.Vector3();
+      dir
+        .subVectors(
+          camera.getWorldPosition(new THREE.Vector3()),
+          clickedObjectPosition
+        )
+        .normalize();
+
+      console.log("direction", dir);
+      console.log(-0.2 > -0.5);
+
+      if (dir.z < -0.02 && dir.x > -0.5 && dir.x < 0.5) {
+        console.log("z");
+        offsetDirection = new THREE.Vector3(-1, 0, 0);
+        offsetDirection_ = new THREE.Vector3(1, 0, 0);
+        offsetDistance = size.x / 2;
+      }
+      if (dir.x > 0.02 && dir.z > -0.5 && dir.z < 0.5) {
+        console.log("x");
+        offsetDistance = size.z / 2;
+        offsetDirection = new THREE.Vector3(0, 0, -1);
+        offsetDirection_ = new THREE.Vector3(0, 0, 1);
+      }
+      if (dir.z > 0.02 && dir.x > -0.5 && dir.x < 0.5) {
+        console.log("z");
+        offsetDirection = new THREE.Vector3(1, 0, 0);
+        offsetDirection_ = new THREE.Vector3(-1, 0, 0);
+        offsetDistance = size.x / 2;
+      }
+      if (dir.x < -0.02 && dir.z > -0.5 && dir.z < 0.5) {
+        console.log("x");
+        offsetDistance = size.z / 2;
+        offsetDirection = new THREE.Vector3(0, 0, 1);
+        offsetDirection_ = new THREE.Vector3(0, 0, -1);
+      }
+
+      // offsetDirection.applyQuaternion(yawObj.quaternion);
+
       const offsetPosition = clickedObjectPosition
         .clone()
         .add(offsetDirection.clone().multiplyScalar(offsetDistance));
 
-      const offsetDirection_ = new THREE.Vector3(1, 0, 0);
-      offsetDirection_.applyQuaternion(yawObj.quaternion);
+      // offsetDirection_.applyQuaternion(yawObj.quaternion);
       const offsetPosition_ = clickedObjectPosition
         .clone()
         .add(offsetDirection_.clone().multiplyScalar(offsetDistance));
 
-      name_card_container.position.set(
+      right_details_container.classList.remove("hide");
+      right_details_container.classList.add("show");
+
+      left_details_container.classList.remove("hide");
+      left_details_container.classList.add("show");
+
+      if (Math.abs(dir.x) < Math.abs(dir.z)) {
+        offsetPosition_.z = offsetPosition.z;
+      } else {
+        offsetPosition_.x = offsetPosition.x;
+      }
+
+      console.log(offsetPosition);
+      console.log(offsetPosition_);
+      console.log(size);
+
+      right_details_container.center = new THREE.Vector2(0, 0);
+      right_details_object.center = new THREE.Vector2(0, 0);
+      left_details_object.center = new THREE.Vector2(1, 0);
+      left_details_container.center = new THREE.Vector2(1, 0);
+
+      right_details_object.position.set(
         offsetPosition.x,
         offsetPosition.y + size.y / 2,
         offsetPosition.z
       );
-      time_card_container.position.set(
-        offsetPosition.x,
-        offsetPosition.y + size.y / 2.4,
-        offsetPosition.z
-      );
-      data_card_container.position.set(
+      left_details_object.position.set(
         offsetPosition_.x,
         offsetPosition.y + size.y / 2,
         offsetPosition_.z
       );
-
-      name_card.classList.remove("hide");
-      time_card.classList.remove("hide");
-      data_card.classList.remove("hide");
-
-      name_card.classList.add("show");
-      time_card.classList.add("show");
-      data_card.classList.add("show");
-      console.log(name_card.position);
     }
   }
 
-  function change_ui_pos(){
-    console.log("working")
-    const size = new THREE.Box3()
-        .setFromObject(ui_object)
-        .getSize(new THREE.Vector3());
+  function change_ui_pos() {
     const clickedObjectPosition = new THREE.Vector3();
-      ui_object.getWorldPosition(clickedObjectPosition);
-      const offsetDirection = new THREE.Vector3(-1, 0, 0);
-      offsetDirection.applyQuaternion(yawObj.quaternion);
-      const offsetDistance = size.x / 1.5;
-      const offsetPosition = clickedObjectPosition
-        .clone()
-        .add(offsetDirection.clone().multiplyScalar(offsetDistance));
+    ui_object.getWorldPosition(clickedObjectPosition);
 
-      const offsetDirection_ = new THREE.Vector3(1, 0, 0);
-      offsetDirection_.applyQuaternion(yawObj.quaternion);
-      const offsetPosition_ = clickedObjectPosition
-        .clone()
-        .add(offsetDirection_.clone().multiplyScalar(offsetDistance));
+    const size = new THREE.Box3()
+      .setFromObject(ui_object)
+      .getSize(new THREE.Vector3());
 
-      name_card_container.position.set(
-        offsetPosition.x,
-        offsetPosition.y + size.y / 2,
-        offsetPosition.z
-      );
-      time_card_container.position.set(
-        offsetPosition.x,
-        offsetPosition.y + size.y / 2.4,
-        offsetPosition.z
-      );
-      data_card_container.position.set(
-        offsetPosition_.x,
-        offsetPosition.y + size.y / 2,
-        offsetPosition_.z
-      );
+    let offsetDirection = new THREE.Vector3(0, 0, 0);
+    let offsetDirection_ = new THREE.Vector3(0, 0, 0);
+    let offsetDistance = 0;
 
+    const dir = new THREE.Vector3();
+    dir
+      .subVectors(
+        camera.getWorldPosition(new THREE.Vector3()),
+        clickedObjectPosition
+      )
+      .normalize();
+
+    console.log("direction", dir);
+    console.log(-0.2 > -0.5);
+
+    if (dir.z < -0.02 && dir.x > -0.5 && dir.x < 0.5) {
+      console.log("z");
+      offsetDirection = new THREE.Vector3(-1, 0, 0);
+      offsetDirection_ = new THREE.Vector3(1, 0, 0);
+      offsetDistance = size.x / 2;
+    }
+    else if (dir.x > 0.02 && dir.z > -0.5 && dir.z < 0.5) {
+      console.log("x");
+      offsetDistance = size.z / 2;
+      offsetDirection = new THREE.Vector3(0, 0, -1);
+      offsetDirection_ = new THREE.Vector3(0, 0, 1);
+    }
+    if (dir.z > 0.02 && dir.x > -0.5 && dir.x < 0.5) {
+      console.log("z");
+      offsetDirection = new THREE.Vector3(1, 0, 0);
+      offsetDirection_ = new THREE.Vector3(-1, 0, 0);
+      offsetDistance = size.x / 2;
+    }
+    if (dir.x < -0.02 && dir.z > -0.5 && dir.z < 0.5) {
+      console.log("x");
+      offsetDistance = size.z / 2;
+      offsetDirection = new THREE.Vector3(0, 0, 1);
+      offsetDirection_ = new THREE.Vector3(0, 0, -1);
+    }
+
+    // offsetDirection.applyQuaternion(yawObj.quaternion);
+
+    const offsetPosition = clickedObjectPosition
+      .clone()
+      .add(offsetDirection.clone().multiplyScalar(offsetDistance));
+
+    // offsetDirection_.applyQuaternion(yawObj.quaternion);
+    const offsetPosition_ = clickedObjectPosition
+      .clone()
+      .add(offsetDirection_.clone().multiplyScalar(offsetDistance));
+
+    right_details_container.classList.remove("hide");
+    right_details_container.classList.add("show");
+
+    left_details_container.classList.remove("hide");
+    left_details_container.classList.add("show");
+
+    if (Math.abs(dir.x) < Math.abs(dir.z)) {
+      offsetPosition_.z = offsetPosition.z;
+    } else {
+      offsetPosition_.x = offsetPosition.x;
+    }
+
+    console.log(offsetPosition);
+    console.log(offsetPosition_);
+    console.log(size);
+
+    right_details_container.center = new THREE.Vector2(0, 0);
+    right_details_object.center = new THREE.Vector2(0, 0);
+    left_details_object.center = new THREE.Vector2(1, 0);
+    left_details_container.center = new THREE.Vector2(1, 0);
+
+    right_details_object.position.set(
+      offsetPosition.x,
+      offsetPosition.y + size.y / 2,
+      offsetPosition.z
+    );
+    left_details_object.position.set(
+      offsetPosition_.x,
+      offsetPosition.y + size.y / 2,
+      offsetPosition_.z
+    );
   }
-
-  const clock = new THREE.Clock();
-  let delta = clock.getDelta();
 
   // Player movement dunction
   function player_movement() {
@@ -704,10 +977,10 @@ function player_cam() {
       !hotspot_view
     ) {
       player_obj.position.x +=
-      Math.sin(-yawObj.rotation.y) * player.speed*delta ;
+        Math.sin(-yawObj.rotation.y) * player.speed * delta;
       player_obj.position.z +=
-      -Math.cos(-yawObj.rotation.y) * player.speed*delta ;
-      if(ui_added) change_ui_pos();
+        -Math.cos(-yawObj.rotation.y) * player.speed * delta;
+      if (ui_added) change_ui_pos();
     }
     if (
       is_pointer_locked &&
@@ -716,10 +989,10 @@ function player_cam() {
       !hotspot_view
     ) {
       player_obj.position.x -=
-      Math.sin(-yawObj.rotation.y) * player.speed*delta ;
+        Math.sin(-yawObj.rotation.y) * player.speed * delta;
       player_obj.position.z -=
-      -Math.cos(-yawObj.rotation.y) * player.speed*delta ;
-      if(ui_added) change_ui_pos();
+        -Math.cos(-yawObj.rotation.y) * player.speed * delta;
+      if (ui_added) change_ui_pos();
     }
     if (
       is_pointer_locked &&
@@ -728,10 +1001,10 @@ function player_cam() {
       !hotspot_view
     ) {
       player_obj.position.x -=
-      Math.sin(-yawObj.rotation.y + Math.PI / 2) * player.speed*delta ;
+        Math.sin(-yawObj.rotation.y + Math.PI / 2) * player.speed * delta;
       player_obj.position.z -=
-      -Math.cos(-yawObj.rotation.y + Math.PI / 2) * player.speed*delta ;
-      if(ui_added) change_ui_pos()
+        -Math.cos(-yawObj.rotation.y + Math.PI / 2) * player.speed * delta;
+      if (ui_added) change_ui_pos();
     }
     if (
       is_pointer_locked &&
@@ -740,10 +1013,10 @@ function player_cam() {
       !hotspot_view
     ) {
       player_obj.position.x -=
-      Math.sin(-yawObj.rotation.y - Math.PI / 2) * player.speed*delta ;
+        Math.sin(-yawObj.rotation.y - Math.PI / 2) * player.speed * delta;
       player_obj.position.z -=
-      -Math.cos(-yawObj.rotation.y - Math.PI / 2) * player.speed*delta ;
-      if(ui_added) change_ui_pos()
+        -Math.cos(-yawObj.rotation.y - Math.PI / 2) * player.speed * delta;
+      if (ui_added) change_ui_pos();
     }
     if (keyPressed["q"]) {
       player_obj.position.y += player.speed * 0.6;
@@ -837,8 +1110,7 @@ function player_cam() {
     }
   }
 
-  // Camera look around mechanic
-  addEventListener("mousemove", (e) => {
+  function look_around(e){
     if (!hotspot_view) {
       if (is_pointer_locked && e.movementX) {
         yawObj.rotation.y -= e.movementX * 0.002; //holds camera as a child
@@ -852,7 +1124,10 @@ function player_cam() {
         );
       }
     }
-  });
+  }
+
+  // Camera look around mechanic
+  addEventListener("mousemove", look_around);
 
   function crosshair_logic() {
     crosshair_raycast.set(
@@ -866,11 +1141,15 @@ function player_cam() {
     if (
       crosshair_intersects.length > 0 &&
       !object_selected &&
-      !object_clicked
+      !object_clicked &&
+      !hotspot_view
     ) {
       prev_selected = crosshair_intersects[0];
       // crosshair_intersects[0].object.material.color.set(0xff00000);
       const selectedObject = prev_selected.object;
+      const size = new THREE.Box3()
+        .setFromObject(selectedObject)
+        .getSize(new THREE.Vector3());
       addSelectedObject(selectedObject);
       outlinePass.selectedObjects = selectedObjects;
       gsap.to(crosshair_intersects[0].object.scale, {
@@ -879,15 +1158,12 @@ function player_cam() {
         z: 1.1,
         duration: 1,
       });
-
-      crosshair_intersects =
-        crosshair_raycast.intersectObjects(interactable_objects);
-
+      data = jsonData[crosshair_intersects[0].object.name];
       hover_card.classList.remove("hide");
       hover_card.classList.add("show");
       const hover_obj = crosshair_intersects[0].object;
       const pos = hover_obj.getWorldPosition(new THREE.Vector3());
-      hover_name.textContent = `${hover_obj.name}`;
+      hover_name.textContent = data.name;
       hover_card_container.position.set(
         pos.x,
         player_obj.position.y - 1,
@@ -915,20 +1191,20 @@ function player_cam() {
     ui_added = false;
     ui_object = false;
 
-    name_card.classList.remove("show");
-    time_card.classList.remove("show");
-    data_card.classList.remove("show");
+    right_details_container.classList.remove("show");
+    right_details_container.classList.add("hide");
 
-    name_card.classList.add("hide");
-    time_card.classList.add("hide");
-    data_card.classList.add("hide");
+    left_details_container.classList.remove("show");
+    left_details_container.classList.add("hide");
   }
 
-  addEventListener("keyup", (e) => {
+  function closing_ui(e){
     if (e.key.toLowerCase() == "x") {
       close_ui();
     }
-  });
+  }
+
+  addEventListener("keyup",closing_ui);
 
   let scene_2 = null;
 
@@ -970,6 +1246,8 @@ function player_cam() {
       this.renderer.setSize(this.width, this.height);
       space_3d.appendChild(renderEl_2);
       this.controls = new OrbitControls(this.camera, renderEl_2);
+      this.controls.enableDamping = true;
+      this.controls.dampingFactor = 0.05
       this.obj.position.set(0, 0, 0);
       this.obj.rotation.set(-Math.PI / 2, Math.PI, Math.PI / 5);
       this.scene.add(this.obj);
@@ -998,20 +1276,23 @@ function player_cam() {
     }
   }
 
-  close_btn.addEventListener("click", () => {
+  function destroy_scene(){
     scene_2.destroy();
     scene_2 = null;
     container.style.display = "none";
     lock_pointer();
-  });
+  }
+
+  close_btn.addEventListener("click", destroy_scene);
 
   function animation() {
     scene_2.renderer.render(scene_2.scene, scene_2.camera);
+    scene_2.controls.update()
     if (scene_2 == null) cancelAnimationFrame();
     else requestAnimationFrame(animation);
   }
 
-  addEventListener("dblclick", () => {
+  function open_detailed_popup(){
     close_ui();
 
     crosshair_intersects =
@@ -1030,18 +1311,18 @@ function player_cam() {
       console.log(pos);
       console.log(player_obj.position);
     }
-  });
+  }
 
-  addEventListener("mouseup", function () {
+  addEventListener("dblclick", open_detailed_popup);
+
+  function popup_ui(){
     if (is_pointer_locked) handleObjectClick();
-  });
+  }
+  addEventListener("mouseup", popup_ui);
 
   addEventListener("keyup", (e) => {
     if (e.key == "x" && scene_2 != null) {
-      scene_2.destroy();
-      scene_2 = null;
-      container.style.display = "none";
-      lock_pointer();
+      destroy_scene()
     }
   });
 
@@ -1066,7 +1347,7 @@ function player_cam() {
   animation__();
 }
 
-addEventListener("keyup", (e) => {
+function toggle_mode(e){
   if (e.key.toLowerCase() == "t") {
     hotspot_view = hotspot_view ? false : true;
     if (hotspot_view) {
@@ -1077,7 +1358,9 @@ addEventListener("keyup", (e) => {
       player_cam();
     }
   }
-});
+}
+
+addEventListener("keyup", toggle_mode);
 
 player_cam();
 
@@ -1090,22 +1373,5 @@ function animate() {
   requestAnimationFrame(animate);
   stats.update();
   TWEEN.update();
-
-  if (object_clicked) {
-    const pos1 = name_card_container.element.getBoundingClientRect();
-    const pos2 = time_card_container.element.getBoundingClientRect();
-
-    // Compare positions
-    const dx = pos1.x - pos2.x;
-    const dy = pos1.y - pos2.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-
-    // Compare sizes (assuming rect shapes)
-    const overlapX = Math.abs(dx) < (pos1.width + pos2.width) / 2;
-    const overlapY = Math.abs(dy) < (pos1.height + pos2.height) / 2;
-    if(overlapX && overlapY){
-      time_card_container.position.y -= 0.1
-    }
-  }
 }
 animate();
