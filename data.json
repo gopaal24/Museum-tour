@@ -5,84 +5,96 @@
       "period": "1770",
       "category":"Sculpture" ,
        "data":   "crnfc fgnnneen",
-      "info": "cgag yeuyc g ceyugyeu cegfvygc eyur y yuegr gyc ugceby uyu ef yugecf yugcf yugec yugcef yugce ce gec yugec gce yugecr gce"
+      "info": "cgag yeuyc g ceyugyeu cegfvygc eyur y yuegr gyc ugceby uyu ef yugecf yugcf yugec yugcef yugce ce gec yugec gce yugecr gce",
+      "img" : "assets/sculptor.png"
     },
     "buddha": {
       "name": "buddha",
       "period": "1420",
       "category":"Sculpture",
       "data": "xugeuycgerix fneugxe bfgxeuyg n zuegxf euyhguye",
-      "info": "cgag yeuyc g ceyugyeu cegfvygc eyur y yuegr gyc ugceby uyu ef yugecf yugcf yugec yugcef yugce ce gec yugec gce yugecr gce"
+      "info": "cgag yeuyc g ceyugyeu cegfvygc eyur y yuegr gyc ugceby uyu ef yugecf yugcf yugec yugcef yugce ce gec yugec gce yugecr gce",
+      "img" : "assets/sculptor.png"
     },
     "cannon_Defece": {
       "name": "cannon_Defece",
       "period": "1820",
       "category":"Sculpture",
       "data": "xugeuycgerix fneugxe bfgxeuyg n zuegxf euyhguye",
-      "info": "cgag yeuyc g ceyugyeu cegfvygc eyur y yuegr gyc ugceby uyu ef yugecf yugcf yugec yugcef yugce ce gec yugec gce yugecr gce"
+      "info": "cgag yeuyc g ceyugyeu cegfvygc eyur y yuegr gyc ugceby uyu ef yugecf yugcf yugec yugcef yugce ce gec yugec gce yugecr gce",
+      "img" : "assets/sculptor.png"
     },
     "cannon_Defece1": {
       "name": "cannon_Defece1",
       "period": "1820",
       "category":"Sculpture",
       "data": "xugeuycgerix fneugxe bfgxeuyg n zuegxf euyhguye",
-      "info": "cgag yeuyc g ceyugyeu cegfvygc eyur y yuegr gyc ugceby uyu ef yugecf yugcf yugec yugcef yugce ce gec yugec gce yugecr gce"
+      "info": "cgag yeuyc g ceyugyeu cegfvygc eyur y yuegr gyc ugceby uyu ef yugecf yugcf yugec yugcef yugce ce gec yugec gce yugecr gce",
+      "img" : "assets/sculptor.png"
     },
     "love1": {
       "name": "love1",
       "period": "1820",
       "category":"Sculpture",
       "data": "xugeuycgerix fneugxe bfgxeuyg n zuegxf euyhguye",
-      "info": "cgag yeuyc g ceyugyeu cegfvygc eyur y yuegr gyc ugceby uyu ef yugecf yugcf yugec yugcef yugce ce gec yugec gce yugecr gce"
+      "info": "cgag yeuyc g ceyugyeu cegfvygc eyur y yuegr gyc ugceby uyu ef yugecf yugcf yugec yugcef yugce ce gec yugec gce yugecr gce",
+      "img" : "assets/sculptor.png"
     },
     "love": {
       "name": "love",
       "period": "1820",
       "category":"Sculpture",
       "data": "xugeuycgerix fneugxe bfgxeuyg n zuegxf euyhguye",
-      "info": "cgag yeuyc g ceyugyeu cegfvygc eyur y yuegr gyc ugceby uyu ef yugecf yugcf yugec yugcef yugce ce gec yugec gce yugecr gce"
+      "info": "cgag yeuyc g ceyugyeu cegfvygc eyur y yuegr gyc ugceby uyu ef yugecf yugcf yugec yugcef yugce ce gec yugec gce yugecr gce",
+      "img" : "assets/sculptor.png"
     },
     "lion_texture1": {
       "name": "lion_texture1",
       "period": "1820",
       "category":"Sculpture",
       "data": "xugeuycgerix fneugxe bfgxeuyg n zuegxf euyhguye",
-      "info": "cgag yeuyc g ceyugyeu cegfvygc eyur y yuegr gyc ugceby uyu ef yugecf yugcf yugec yugcef yugce ce gec yugec gce yugecr gce"
+      "info": "cgag yeuyc g ceyugyeu cegfvygc eyur y yuegr gyc ugceby uyu ef yugecf yugcf yugec yugcef yugce ce gec yugec gce yugecr gce",
+      "img" : "assets/sculptor.png"
     },
     "lion_texture": {
       "name": "lion_texture",
       "period": "1820",
       "category":"Sculpture",
       "data": "xugeuycgerix fneugxe bfgxeuyg n zuegxf euyhguye",
-      "info": "cgag yeuyc g ceyugyeu cegfvygc eyur y yuegr gyc ugceby uyu ef yugecf yugcf yugec yugcef yugce ce gec yugec gce yugecr gce"
+      "info": "cgag yeuyc g ceyugyeu cegfvygc eyur y yuegr gyc ugceby uyu ef yugecf yugcf yugec yugcef yugce ce gec yugec gce yugecr gce",
+      "img" : "assets/sculptor.png"
     },
     "figurine_lady": {
       "name": "figurine_lady",
       "period": "1820",
       "category":"Sculpture",
       "data": "xugeuycgerix fneugxe bfgxeuyg n zuegxf euyhguye",
-      "info": "cgag yeuyc g ceyugyeu cegfvygc eyur y yuegr gyc ugceby uyu ef yugecf yugcf yugec yugcef yugce ce gec yugec gce yugecr gce"
+      "info": "cgag yeuyc g ceyugyeu cegfvygc eyur y yuegr gyc ugceby uyu ef yugecf yugcf yugec yugcef yugce ce gec yugec gce yugecr gce",
+      "img" : "assets/sculptor.png"
     },
     "world_map": {
       "name": "world_map",
       "period": "1820",
       "category":"Sculpture",
       "data": "xugeuycgerix fneugxe bfgxeuyg n zuegxf euyhguye",
-      "info": "cgag yeuyc g ceyugyeu cegfvygc eyur y yuegr gyc ugceby uyu ef yugecf yugcf yugec yugcef yugce ce gec yugec gce yugecr gce"
+      "info": "cgag yeuyc g ceyugyeu cegfvygc eyur y yuegr gyc ugceby uyu ef yugecf yugcf yugec yugcef yugce ce gec yugec gce yugecr gce",
+      "img" : "assets/sculptor.png"
     },
     "skelton": {
       "name": "skelton",
       "period": "1820",
       "category":"Sculpture",
       "data": "xugeuycgerix fneugxe bfgxeuyg n zuegxf euyhguye",
-      "info": "cgag yeuyc g ceyugyeu cegfvygc eyur y yuegr gyc ugceby uyu ef yugecf yugcf yugec yugcef yugce ce gec yugec gce yugecr gce"
+      "info": "cgag yeuyc g ceyugyeu cegfvygc eyur y yuegr gyc ugceby uyu ef yugecf yugcf yugec yugcef yugce ce gec yugec gce yugecr gce",
+      "img" : "assets/sculptor.png"
     },
     "nepoleon": {
       "name": "nepoleon",
       "period": "1820",
       "category":"Sculpture",
       "data": "xugeuycgerix fneugxe bfgxeuyg n zuegxf euyhguye",
-      "info": "cgag yeuyc g ceyugyeu cegfvygc eyur y yuegr gyc ugceby uyu ef yugecf yugcf yugec yugcef yugce ce gec yugec gce yugecr gce"
+      "info": "cgag yeuyc g ceyugyeu cegfvygc eyur y yuegr gyc ugceby uyu ef yugecf yugcf yugec yugcef yugce ce gec yugec gce yugecr gce",
+      "img" : "assets/sculptor.png"
     }
 
   }
