@@ -33,11 +33,20 @@ const space_3d = document.querySelector(".image-container");
 const close_btn = document.querySelector(".close-btn");
 const loading_screen = document.querySelector(".loading-container");
 const crosshair = document.querySelector("#crosshair");
-const start_btn = document.querySelector(".start-btn");
+const player_start_btn = document.querySelector(".player-start-btn");
+const hotspot_start_btn = document.querySelector(".hotspot-start-btn");
 const instructions_el = document.querySelector(".instructions");
-const container_1 = document.querySelector(".container1");
-const container_2 = document.querySelector(".container2");
-const container_3 = document.querySelector(".container3");
+const name_tag = document.querySelector(".name-tag");
+const player_mode_el = document.querySelector(".player-mode")
+const player_start = document.querySelector(".player-start")
+const hotspot_mode_el = document.querySelector(".hotspot-mode")
+const hotspot_start = document.querySelector(".hotspot-start")
+const info_btn = document.querySelector(".info")
+const instruc_1 = document.querySelector(".instruc-1")
+const instruc_2 = document.querySelector(".instruc-2")
+// const container_1 = document.querySelector(".container1");
+// const container_2 = document.querySelector(".container2");
+// const container_3 = document.querySelector(".container3");
 
 // essential variables
 let collider_mesh_array;
@@ -54,6 +63,12 @@ let interactable_objects = [];
 let object_clicked = false;
 let hotspot_view = false;
 let artifact_pos = [];
+let eventlisteners = [];
+let offsetDirection = new THREE.Vector3(0, 0, 0);
+let offsetDirection_ = new THREE.Vector3(0, 0, 0);
+let offsetDistance = 0;
+let ui_added = false;
+let ui_object = null;
 
 // camera
 const camera = new THREE.PerspectiveCamera(
@@ -64,7 +79,7 @@ const camera = new THREE.PerspectiveCamera(
 );
 
 const hotspot_cam = new THREE.PerspectiveCamera(
-  45,
+  46,
   window.innerWidth / window.innerHeight,
   0.1,
   1000
@@ -84,11 +99,11 @@ renderer.render(scene, camera);
 
 // keyboard event to store the status of key press
 
-function register_keydown(e){
+function register_keydown(e) {
   keyPressed[e.key.toLowerCase()] = true;
 }
 
-function register_keyup(e){
+function register_keyup(e) {
   keyPressed[e.key.toLowerCase()] = false;
 }
 
@@ -156,8 +171,11 @@ function fetchdata() {
     .then((response) => response.json())
     .then((data) => {
       jsonData = data;
+      console.log(data);
     });
 }
+
+
 
 let data;
 
@@ -188,12 +206,31 @@ manager.onLoad = function () {
     artifact_pos.push(element.position);
   });
 
- start_btn.addEventListener("click", () => {
-    console.log("clicked");
+  player_start_btn.addEventListener("click", () => {
+    player_mode_el.style.display = "flex"
     instructions_el.style.display = "none";
-    rendererEl.requestPointerLock();
+   
   });
+  player_start.addEventListener("click", ()=>{
+    player_mode_el.style.display = "none"
+    rendererEl.requestPointerLock();
+    renderPass.camera = camera;
+    hotspot_view = false;
+    player_cam();
+  })
+  hotspot_start_btn.addEventListener("click", () => {
+    hotspot_mode_el.style.display = "flex";
+    instructions_el.style.display = "none";
+    
+  });
+  hotspot_start.addEventListener("click", ()=>{
+    hotspot_mode_el.style.display = "none"
+    renderPass.camera = hotspot_cam;
+    hotspot_view = true;
+    hotspot_cam_view();
+  })
 };
+
 manager.onError = function (e) {
   console.log("error: ", e);
 };
@@ -217,7 +254,7 @@ loader.load("assets/museum_final_01.glb", (gltf) => {
 const labelRenderer = new CSS2DRenderer();
 labelRenderer.setSize(window.innerWidth, window.innerHeight);
 labelRenderer.domElement.style.position = "absolute";
-labelRenderer.domElement.style.top = "0px";
+labelRenderer.domElement.style.top = "5px";
 labelRenderer.domElement.style.pointerEvents = "none";
 document.body.appendChild(labelRenderer.domElement);
 
@@ -288,6 +325,12 @@ outlinePass = new OutlinePass(
   scene,
   camera
 );
+outlinePass.visibleEdgeColor.set(0xffffff);
+outlinePass.hiddenEdgeColor.set(0xffffff);
+outlinePass.edgeStrength = 3;
+outlinePass.edgeGlow = 1;
+outlinePass.edgeThickness = 3;
+outlinePass.pulsePeriod = 4;
 composer.addPass(outlinePass);
 
 const outputPass = new OutputPass();
@@ -306,6 +349,8 @@ let selectedObjects = [];
 document.addEventListener("pointerlockchange", function () {
   change_lock_state();
 });
+
+
 
 const rendererEl = renderer.domElement;
 function lock_pointer() {
@@ -332,14 +377,62 @@ addEventListener("resize", () => {
   labelRenderer.setSize(window.innerWidth, window.innerHeight);
   camera.updateProjectionMatrix();
   hotspot_cam.updateProjectionMatrix();
-  renderer.setPixelRatio(window.devicePixelRatio);
+  effectFXAA.uniforms["resolution"].value.set(
+    1 / window.innerWidth,
+    1 / window.innerHeight
+  );
 });
+
+addEventListener("mouseup",()=>{
+  instruc_1.style.display = "none";
+  instruc_2.style.display = "none";
+})
+
+info_btn.addEventListener("mouseup",info_show)
+
+
+addEventListener("keyup", (e)=>{
+  if(e.key.toLowerCase() == 'i'){
+    info_show()
+  }
+  else inflo_close()
+})
+
+function inflo_close(){
+  instruc_1.style.display = "none";
+  instruc_2.style.display = "none";
+}
+
+function info_show(){
+  if(hotspot_view){
+    instruc_1.style.display = (instruc_1.style.display == "none")? "block" : "none"; 
+  }
+  else{
+    instruc_2.style.display = (instruc_2.style.display == "none")? "block" : "none"; 
+  }
+}
+
 
 const controls = new OrbitControls(hotspot_cam, renderer.domElement);
 
+function removeAllEventListeners() {
+  eventlisteners.forEach((listener) => {
+    window.removeEventListener(listener.type, listener.listener);
+  });
+  eventlisteners = [];
+}
+hotspot_cam.position.set(-0.8, 7, 19);
+
 function hotspot_cam_view() {
+  removeAllEventListeners();
+  renderPass.camera = hotspot_cam;
+  outlinePass.renderCamera = hotspot_cam;
+  selectedObjects = []
+  outlinePass.selectedObjects = []
+
   hotspot_cam.position.set(-0.8, 7, 19);
-  // hotspot_cam.lookAt(25, player.height, 25);
+
+  hotspot_cam.lookAt(25, player.height, 25);
 
   controls.enabled = true;
   controls.enablePan = false;
@@ -424,7 +517,7 @@ function hotspot_cam_view() {
       space_3d.appendChild(renderEl_2);
       this.controls = new OrbitControls(this.camera, renderEl_2);
       this.controls.enableDamping = true;
-      this.controls.dampingFactor = 0.05
+      this.controls.dampingFactor = 0.05;
       this.obj.position.set(0, 0, 0);
       this.obj.rotation.set(-Math.PI / 2, Math.PI, Math.PI / 5);
       this.scene.add(this.obj);
@@ -453,10 +546,21 @@ function hotspot_cam_view() {
     }
   }
 
-  let ui_added = false;
-  let ui_object = null;
+  function close_ui() {
+    object_clicked = false;
+    ui_added = false;
+    ui_object = false;
+  
+    right_details_container.classList.remove("show");
+    right_details_container.classList.add("hide");
+  
+    left_details_container.classList.remove("show");
+    left_details_container.classList.add("hide");
+  }
+
 
   function change_ui_pos() {
+    console.log(ui_added)
     const clickedObjectPosition = new THREE.Vector3();
     ui_object.getWorldPosition(clickedObjectPosition);
 
@@ -484,8 +588,7 @@ function hotspot_cam_view() {
       offsetDirection = new THREE.Vector3(-1, 0, 0);
       offsetDirection_ = new THREE.Vector3(1, 0, 0);
       offsetDistance = size.x / 2;
-    }
-    else if (dir.x > 0.02 && dir.z > -0.5 && dir.z < 0.5) {
+    } else if (dir.x > 0.02 && dir.z > -0.5 && dir.z < 0.5) {
       console.log("x");
       offsetDistance = size.z / 2;
       offsetDirection = new THREE.Vector3(0, 0, -1);
@@ -527,10 +630,6 @@ function hotspot_cam_view() {
       offsetPosition_.x = offsetPosition.x;
     }
 
-    console.log(offsetPosition);
-    console.log(offsetPosition_);
-    console.log(size);
-
     right_details_container.center = new THREE.Vector2(0, 0);
     right_details_object.center = new THREE.Vector2(0, 0);
     left_details_object.center = new THREE.Vector2(1, 0);
@@ -548,15 +647,20 @@ function hotspot_cam_view() {
     );
   }
 
-  function handleObjectClick(e){
+  function handleObjectClick(e) {
+
     mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
 
+    console.log("mouseup in hotspot mode");
     raycast.setFromCamera(mouse, hotspot_cam);
-    if(ui_added) change_ui_pos()
+
+    console.log(raycast);
+    if (ui_added) change_ui_pos();
 
     const intersects = raycast.intersectObjects(interactable_objects);
     if (intersects.length > 0) {
+      console.log(intersects[0]);
       ui_added = true;
       console.log("clicked");
       object_clicked = true;
@@ -582,15 +686,13 @@ function hotspot_cam_view() {
       let offsetDistance = 0;
 
       const dir = new THREE.Vector3();
+
       dir
         .subVectors(
           hotspot_cam.getWorldPosition(new THREE.Vector3()),
           clickedObjectPosition
         )
         .normalize();
-
-      console.log("direction", dir);
-      console.log(-0.2 > -0.5);
 
       if (dir.z < -0.02 && dir.x > -0.7 && dir.x < 0.7) {
         console.log("z");
@@ -638,7 +740,7 @@ function hotspot_cam_view() {
         offsetPosition_.z = offsetPosition.z;
       } else {
         offsetPosition_.x = offsetPosition.x;
-      } 
+      }
 
       right_details_container.center = new THREE.Vector2(0, 0);
       right_details_object.center = new THREE.Vector2(0, 0);
@@ -658,38 +760,34 @@ function hotspot_cam_view() {
     }
   }
 
+  const cam_raycast = new THREE.Raycaster();
+  cam_raycast.far = 20;
+
   addEventListener("mouseup", handleObjectClick);
 
-  function close_ui() {
-    object_clicked = false;
-    ui_added = false
-    ui_object = null
+  eventlisteners.push({ type: "mouseup", listener: handleObjectClick });
 
-    right_details_container.classList.remove("show");
-    right_details_container.classList.add("hide");
 
-    left_details_container.classList.remove("show");
-    left_details_container.classList.add("hide");
-  }
-
-  function destroy_scene(){
+  function destroy_scene() {
     scene_2.destroy();
     scene_2 = null;
     container.style.display = "none";
+    name_tag.style.display = "flex"
   }
 
   close_btn.addEventListener("click", destroy_scene);
+  eventlisteners.push({ type: "click", listener: destroy_scene });
 
   function animation() {
     scene_2.renderer.render(scene_2.scene, scene_2.camera);
-    scene_2.controls.update()
+    scene_2.controls.update();
     if (scene_2 == null) cancelAnimationFrame();
     else requestAnimationFrame(animation);
   }
 
-
-  function open_detailed_popup(e){
+  function open_detailed_popup(e) {
     close_ui();
+    name_tag.style.display = "none"
 
     mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
@@ -714,6 +812,7 @@ function hotspot_cam_view() {
   }
 
   addEventListener("dblclick", open_detailed_popup);
+  eventlisteners.push({ type: "dblclick", listener: open_detailed_popup });
 
   let current_viewing_artifact = -1;
 
@@ -733,15 +832,31 @@ function hotspot_cam_view() {
       y: hotspot_positions[current_viewing_artifact].y,
       z: hotspot_positions[current_viewing_artifact].z,
       duration: 2,
+      onComplete: function () {
+        name_tag.style.display = "flex";
+        const keys = Object.keys(jsonData);
+        name_tag.children[0].textContent = jsonData[keys[current_viewing_artifact]].name;
+      },
     });
   }
 
-  function camera_navigation(e){
+  function glow(n) {
+    const keys = Object.keys(jsonData);
+    selectedObjects = [];
+    selectedObjects.push(scene.getObjectByName(jsonData[keys[n]].name));
+    outlinePass.selectedObjects = selectedObjects;
+    console.log(selectedObjects)
+    console.log(outlinePass, renderPass)
+    name_tag.style.display = "none";
+  }
+
+  function camera_navigation(e) {
     if (e.key == "ArrowRight" && hotspot_view) {
       close_ui();
       if (current_viewing_artifact >= hotspot_positions.length - 1)
         current_viewing_artifact = 0;
       else current_viewing_artifact += 1;
+      glow(current_viewing_artifact);
       change_cam_view();
     }
     if (e.key == "ArrowLeft" && hotspot_view) {
@@ -749,17 +864,35 @@ function hotspot_cam_view() {
       if (current_viewing_artifact <= 0)
         current_viewing_artifact = hotspot_positions.length - 1;
       else current_viewing_artifact -= 1;
+      glow(current_viewing_artifact);
       change_cam_view();
     }
   }
 
   addEventListener("keyup", camera_navigation);
+  eventlisteners.push({ type: "keyup", listener: camera_navigation });
+
+  function animation__() {
+    composer.render();
+    labelRenderer.render(scene, hotspot_cam);
+    requestAnimationFrame(animation__);
+    stats.update();
+    // focus_glow();
+    if (hotspot_view) {
+      cancelAnimationFrame(animation__);
+    }
+  }
+  animation__();
 }
 
 function player_cam() {
+  renderPass.camera = camera;
+  outlinePass.renderCamera = camera;
+  removeAllEventListeners();
+  selectedObjects = [];
+  outlinePass.selectedObjects = [];
   controls.enabled = false;
 
-  console.log("is_pointer_locked:", is_pointer_locked);
   is_pointer_locked = false;
 
   let ui_added = false;
@@ -877,6 +1010,7 @@ function player_cam() {
   }
 
   function change_ui_pos() {
+    console.log(ui_added)
     const clickedObjectPosition = new THREE.Vector3();
     ui_object.getWorldPosition(clickedObjectPosition);
 
@@ -897,27 +1031,25 @@ function player_cam() {
       .normalize();
 
     console.log("direction", dir);
-    console.log(-0.2 > -0.5);
 
-    if (dir.z < -0.02 && dir.x > -0.5 && dir.x < 0.5) {
+    if (dir.z < -0.02 && dir.x > -0.7 && dir.x < 0.7) {
       console.log("z");
       offsetDirection = new THREE.Vector3(-1, 0, 0);
       offsetDirection_ = new THREE.Vector3(1, 0, 0);
       offsetDistance = size.x / 2;
-    }
-    else if (dir.x > 0.02 && dir.z > -0.5 && dir.z < 0.5) {
+    } else if (dir.x > 0.02 && dir.z > -0.7 && dir.z < 0.7) {
       console.log("x");
       offsetDistance = size.z / 2;
       offsetDirection = new THREE.Vector3(0, 0, -1);
       offsetDirection_ = new THREE.Vector3(0, 0, 1);
     }
-    if (dir.z > 0.02 && dir.x > -0.5 && dir.x < 0.5) {
+    if (dir.z > 0.02 && dir.x > -0.7 && dir.x < 0.7) {
       console.log("z");
       offsetDirection = new THREE.Vector3(1, 0, 0);
       offsetDirection_ = new THREE.Vector3(-1, 0, 0);
       offsetDistance = size.x / 2;
     }
-    if (dir.x < -0.02 && dir.z > -0.5 && dir.z < 0.5) {
+    if (dir.x < -0.02 && dir.z > -0.7 && dir.z < 0.7) {
       console.log("x");
       offsetDistance = size.z / 2;
       offsetDirection = new THREE.Vector3(0, 0, 1);
@@ -1018,12 +1150,18 @@ function player_cam() {
         -Math.cos(-yawObj.rotation.y - Math.PI / 2) * player.speed * delta;
       if (ui_added) change_ui_pos();
     }
-    if (keyPressed["q"]) {
-      player_obj.position.y += player.speed * 0.6;
-    }
-    if (keyPressed["e"]) {
-      player_obj.position.y -= player.speed * 0.6;
-    }
+  }
+
+  function close_ui() {
+    object_clicked = false;
+    ui_added = false;
+    ui_object = false;
+  
+    right_details_container.classList.remove("show");
+    right_details_container.classList.add("hide");
+  
+    left_details_container.classList.remove("show");
+    left_details_container.classList.add("hide");
   }
 
   function update() {
@@ -1110,7 +1248,7 @@ function player_cam() {
     }
   }
 
-  function look_around(e){
+  function look_around(e) {
     if (!hotspot_view) {
       if (is_pointer_locked && e.movementX) {
         yawObj.rotation.y -= e.movementX * 0.002; //holds camera as a child
@@ -1128,6 +1266,7 @@ function player_cam() {
 
   // Camera look around mechanic
   addEventListener("mousemove", look_around);
+  eventlisteners.push({ type: "mousemove", listener: look_around });
 
   function crosshair_logic() {
     crosshair_raycast.set(
@@ -1147,17 +1286,14 @@ function player_cam() {
       prev_selected = crosshair_intersects[0];
       // crosshair_intersects[0].object.material.color.set(0xff00000);
       const selectedObject = prev_selected.object;
-      const size = new THREE.Box3()
-        .setFromObject(selectedObject)
-        .getSize(new THREE.Vector3());
-      addSelectedObject(selectedObject);
-      outlinePass.selectedObjects = selectedObjects;
-      gsap.to(crosshair_intersects[0].object.scale, {
-        x: 1.1,
-        y: 1.1,
-        z: 1.1,
-        duration: 1,
-      });
+      
+      outlinePass.selectedObjects =[selectedObject];
+      // gsap.to(crosshair_intersects[0].object.scale, {
+      //   x: 1.1,
+      //   y: 1.1,
+      //   z: 1.1,
+      //   duration: 1,
+      // });
       data = jsonData[crosshair_intersects[0].object.name];
       hover_card.classList.remove("hide");
       hover_card.classList.add("show");
@@ -1173,38 +1309,30 @@ function player_cam() {
       if (prev_selected != null) {
         prev_selected.object.material.color.set(0xffffff);
         outlinePass.selectedObjects = [];
-        gsap.to(prev_selected.object.scale, {
-          x: 1,
-          y: 1,
-          z: 1,
-          duration: 1,
-        });
-
+        // gsap.to(prev_selected.object.scale, {
+        //   x: 1,
+        //   y: 1,
+        //   z: 1,
+        //   duration: 1,
+        // });
         hover_card.classList.remove("show");
         hover_card.classList.add("hide");
       }
     }
   }
 
-  function close_ui() {
-    object_clicked = false;
-    ui_added = false;
-    ui_object = false;
+  
 
-    right_details_container.classList.remove("show");
-    right_details_container.classList.add("hide");
-
-    left_details_container.classList.remove("show");
-    left_details_container.classList.add("hide");
-  }
-
-  function closing_ui(e){
+  function closing_ui(e) {
     if (e.key.toLowerCase() == "x") {
       close_ui();
+      ui_added = false
+      console.log()
     }
   }
 
-  addEventListener("keyup",closing_ui);
+  addEventListener("keyup", closing_ui);
+  eventlisteners.push({ type: "keyup", listener: closing_ui });
 
   let scene_2 = null;
 
@@ -1247,7 +1375,7 @@ function player_cam() {
       space_3d.appendChild(renderEl_2);
       this.controls = new OrbitControls(this.camera, renderEl_2);
       this.controls.enableDamping = true;
-      this.controls.dampingFactor = 0.05
+      this.controls.dampingFactor = 0.05;
       this.obj.position.set(0, 0, 0);
       this.obj.rotation.set(-Math.PI / 2, Math.PI, Math.PI / 5);
       this.scene.add(this.obj);
@@ -1276,7 +1404,7 @@ function player_cam() {
     }
   }
 
-  function destroy_scene(){
+  function destroy_scene() {
     scene_2.destroy();
     scene_2 = null;
     container.style.display = "none";
@@ -1287,12 +1415,12 @@ function player_cam() {
 
   function animation() {
     scene_2.renderer.render(scene_2.scene, scene_2.camera);
-    scene_2.controls.update()
+    scene_2.controls.update();
     if (scene_2 == null) cancelAnimationFrame();
     else requestAnimationFrame(animation);
   }
 
-  function open_detailed_popup(){
+  function open_detailed_popup() {
     close_ui();
 
     crosshair_intersects =
@@ -1314,17 +1442,22 @@ function player_cam() {
   }
 
   addEventListener("dblclick", open_detailed_popup);
+  eventlisteners.push({ type: "dblclick", listener: open_detailed_popup });
 
-  function popup_ui(){
+  function popup_ui() {
     if (is_pointer_locked) handleObjectClick();
   }
   addEventListener("mouseup", popup_ui);
+  eventlisteners.push({ type: "mouseup", listener: popup_ui });
 
-  addEventListener("keyup", (e) => {
+  function destroy_scene_(e) {
     if (e.key == "x" && scene_2 != null) {
-      destroy_scene()
+      destroy_scene();
     }
-  });
+  }
+
+  addEventListener("keyup", destroy_scene_);
+  eventlisteners.push({ type: "keyup", listener: destroy_scene_ });
 
   function addSelectedObject(object) {
     selectedObjects = [];
@@ -1347,14 +1480,28 @@ function player_cam() {
   animation__();
 }
 
-function toggle_mode(e){
+function toggle_mode(e) {
   if (e.key.toLowerCase() == "t") {
+    object_clicked = false;
+    ui_added = false;
+    ui_object = false;
+    outlinePass.selectedObjects = []
+  
+    right_details_container.classList.remove("show");
+    right_details_container.classList.add("hide");
+  
+    left_details_container.classList.remove("show");
+    left_details_container.classList.add("hide");
+
     hotspot_view = hotspot_view ? false : true;
+    name_tag.style.display = "none"
     if (hotspot_view) {
-      renderPass.camera = hotspot_cam;
+      console.log(outlinePass);
+      labelRenderer.render(scene, hotspot_cam);
       hotspot_cam_view();
     } else {
-      renderPass.camera = camera;
+      console.log(outlinePass);
+      labelRenderer.render(scene, camera);
       player_cam();
     }
   }
@@ -1362,16 +1509,15 @@ function toggle_mode(e){
 
 addEventListener("keyup", toggle_mode);
 
-player_cam();
-
 // animate
 function animate() {
   controls.update();
   composer.render();
-  if (hotspot_view) labelRenderer.render(scene, hotspot_cam);
-  else labelRenderer.render(scene, camera);
+  if (hotspot_view) {
+    labelRenderer.render(scene, hotspot_cam);
+  } else labelRenderer.render(scene, camera);
   requestAnimationFrame(animate);
   stats.update();
   TWEEN.update();
-}
+} 
 animate();
